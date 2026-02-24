@@ -117,159 +117,179 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-blue-600" />
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 space-y-6">
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <div className="p-1.5 bg-indigo-50 rounded-lg">
+            <Settings className="w-4 h-4 text-indigo-600" />
+          </div>
           Konfigurasi & Data
         </h2>
-        <p className="text-sm text-slate-500">
-          Upload data murid (Excel/CSV) dan atur parameter ujian.
+        <p className="text-xs text-gray-500 ml-9">
+          Upload data murid dan atur parameter ujian.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Data Input Section */}
-        <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-4">
+        <div className="p-5 bg-gray-50/50 rounded-xl border border-gray-200/60 space-y-4">
           <div className="flex items-center justify-between">
-            <label className="block text-sm font-medium text-slate-700">
-              Sumber Data Murid
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Sumber Data
             </label>
             <button
               type="button"
               onClick={downloadTemplate}
-              className="text-xs text-blue-600 hover:text-blue-800 flex items-center font-medium"
+              className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center font-medium transition-colors"
             >
               <Download className="w-3 h-3 mr-1" />
-              Download Template
+              Template
             </button>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
+          <div className="flex flex-col gap-3">
+            <div className="relative w-full group">
               <input
                 type="file"
                 accept=".xlsx, .xls, .csv"
                 onChange={handleFileUpload}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
-              <div className="flex items-center justify-center w-full h-10 px-4 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors">
-                <Upload className="w-4 h-4 mr-2" />
-                {fileName ? fileName : "Upload Excel/CSV"}
+              <div className="flex items-center justify-center w-full h-11 px-4 bg-white border border-gray-300 border-dashed rounded-lg text-sm text-gray-600 group-hover:bg-gray-50 group-hover:border-indigo-300 transition-all duration-200">
+                <Upload className="w-4 h-4 mr-2 text-gray-400 group-hover:text-indigo-500" />
+                {fileName ? <span className="text-gray-900 font-medium truncate">{fileName}</span> : "Upload Excel/CSV"}
               </div>
             </div>
             
             <button
               type="button"
               onClick={loadSampleData}
-              className="flex items-center justify-center px-4 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+              className="flex items-center justify-center w-full h-9 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
             >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Gunakan Sample
+              <RotateCcw className="w-3 h-3 mr-1.5" />
+              Gunakan Data Sample
             </button>
           </div>
           
           {rawData.length > 0 && (
-            <div className="text-xs text-green-600 font-medium flex items-center">
-              ✓ {rawData.length - 1} data murid terdeteksi
+            <div className="flex items-center gap-2 px-3 py-2 bg-green-50/50 border border-green-100 rounded-lg">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-xs text-green-700 font-medium">
+                {rawData.length - 1} data murid siap diproses
+              </span>
             </div>
           )}
         </div>
 
         {/* Parameters Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label htmlFor="jenjang" className="block text-sm font-medium text-slate-700">
-              Jenjang / Kelas
-            </label>
-            <select
-              id="jenjang"
-              value={jenjang}
-              onChange={(e) => setJenjang(e.target.value)}
-              className="w-full h-10 px-3 rounded-md border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="Semua">Semua Jenjang</option>
-              {jenjangOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  Jenjang {opt}
-                </option>
-              ))}
-              {jenjangOptions.length === 0 && (
-                <>
-                  <option value="7">Kelas 7</option>
-                  <option value="8">Kelas 8</option>
-                  <option value="9">Kelas 9</option>
-                  <option value="10">Kelas 10</option>
-                  <option value="11">Kelas 11</option>
-                  <option value="12">Kelas 12</option>
-                </>
-              )}
-            </select>
-          </div>
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor="jenjang" className="block text-xs font-medium text-gray-700">
+                Jenjang / Kelas
+              </label>
+              <div className="relative">
+                <select
+                  id="jenjang"
+                  value={jenjang}
+                  onChange={(e) => setJenjang(e.target.value)}
+                  className="w-full h-10 pl-3 pr-8 rounded-lg border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
+                >
+                  <option value="Semua">Semua Jenjang</option>
+                  {jenjangOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      Jenjang {opt}
+                    </option>
+                  ))}
+                  {jenjangOptions.length === 0 && (
+                    <>
+                      <option value="7">Kelas 7</option>
+                      <option value="8">Kelas 8</option>
+                      <option value="9">Kelas 9</option>
+                      <option value="10">Kelas 10</option>
+                      <option value="11">Kelas 11</option>
+                      <option value="12">Kelas 12</option>
+                    </>
+                  )}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-gray-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+              </div>
+            </div>
 
-          <div className="space-y-2">
-            <label htmlFor="jumlahHari" className="block text-sm font-medium text-slate-700">
-              Jumlah Hari Ujian
-            </label>
-            <input
-              type="number"
-              id="jumlahHari"
-              min="1"
-              value={jumlahHari}
-              onChange={(e) => setJumlahHari(parseInt(e.target.value) || 1)}
-              className="w-full h-10 px-3 rounded-md border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="space-y-2 sm:col-span-2">
-            <label htmlFor="jumlahRuang" className="block text-sm font-medium text-slate-700">
-              Jumlah Ruang
-            </label>
-            <div className="flex items-center gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor="jumlahHari" className="block text-xs font-medium text-gray-700">
+                Durasi Ujian (Hari)
+              </label>
               <input
                 type="number"
-                id="jumlahRuang"
+                id="jumlahHari"
                 min="1"
-                max="50"
-                value={jumlahRuang}
-                onChange={(e) => setJumlahRuang(parseInt(e.target.value) || 1)}
-                className="w-32 h-10 px-3 rounded-md border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={jumlahHari}
+                onChange={(e) => setJumlahHari(parseInt(e.target.value) || 1)}
+                className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
               />
-              <span className="text-sm text-slate-500">
-                Sesuaikan nama ruang di bawah ini:
-              </span>
-            </div>
-            
-            {/* Room Name Editor */}
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 bg-slate-50 p-3 rounded-md border border-slate-200 max-h-48 overflow-y-auto">
-              {namaRuang.map((nama, idx) => (
-                <div key={idx} className="flex items-center">
-                  <span className="text-xs text-slate-400 w-6">{idx + 1}.</span>
-                  <input
-                    type="text"
-                    value={nama}
-                    onChange={(e) => handleRoomNameChange(idx, e.target.value)}
-                    className="w-full h-8 px-2 text-sm border border-slate-300 rounded focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-              ))}
             </div>
           </div>
 
-          <div className="flex items-end pb-2 sm:col-span-2">
-            <label className="flex items-center space-x-3 cursor-pointer group">
-              <div className="relative">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label htmlFor="jumlahRuang" className="block text-xs font-medium text-gray-700">
+                Jumlah Ruang
+              </label>
+              <span className="text-[10px] text-gray-400">Maksimal 50 ruang</span>
+            </div>
+            <input
+              type="number"
+              id="jumlahRuang"
+              min="1"
+              max="50"
+              value={jumlahRuang}
+              onChange={(e) => setJumlahRuang(parseInt(e.target.value) || 1)}
+              className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+            />
+            
+            {/* Room Name Editor */}
+            <div className="space-y-2">
+              <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                Nama Ruang
+              </label>
+              <div className="grid grid-cols-2 gap-2 bg-gray-50/50 p-3 rounded-lg border border-gray-200/60 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+                {namaRuang.map((nama, idx) => (
+                  <div key={idx} className="flex items-center group">
+                    <span className="text-[10px] text-gray-400 w-5 font-mono">{idx + 1}.</span>
+                    <input
+                      type="text"
+                      value={nama}
+                      onChange={(e) => handleRoomNameChange(idx, e.target.value)}
+                      className="w-full h-7 px-2 text-xs border border-gray-200 rounded focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 bg-white transition-all"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <label className="flex items-start space-x-3 cursor-pointer group p-3 rounded-lg border border-gray-200 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all">
+              <div className="relative mt-0.5">
                 <input
                   type="checkbox"
                   checked={pisahGender}
                   onChange={(e) => setPisahGender(e.target.checked)}
                   className="peer sr-only"
                 />
-                <div className="w-10 h-6 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
               </div>
-              <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">
-                Pisah Gender (L/P) - <span className="text-slate-500 font-normal">Ruang Laki-laki & Perempuan dipisah</span>
-              </span>
+              <div className="flex-1">
+                <span className="block text-sm font-medium text-gray-700 group-hover:text-indigo-900">
+                  Pisah Gender (L/P)
+                </span>
+                <span className="block text-xs text-gray-500 mt-0.5">
+                  Ruang ujian akan dipisahkan antara laki-laki dan perempuan.
+                </span>
+              </div>
             </label>
           </div>
         </div>
@@ -278,17 +298,20 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
           type="submit"
           disabled={isProcessing || rawData.length === 0}
           className={cn(
-            "w-full flex items-center justify-center h-12 rounded-lg text-white font-medium transition-all shadow-sm",
+            "w-full flex items-center justify-center h-12 rounded-xl text-white font-medium transition-all shadow-sm relative overflow-hidden",
             isProcessing || rawData.length === 0
-              ? "bg-slate-300 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700 hover:shadow-md active:transform active:scale-[0.98]"
+              ? "bg-gray-300 cursor-not-allowed"
+              : "bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 hover:shadow-md hover:shadow-indigo-200 active:scale-[0.98]"
           )}
         >
           {isProcessing ? (
-            "Memproses..."
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Memproses...</span>
+            </div>
           ) : (
             <>
-              <Play className="w-5 h-5 mr-2" />
+              <Play className="w-4 h-4 mr-2 fill-current" />
               Proses Acak Jadwal
             </>
           )}
