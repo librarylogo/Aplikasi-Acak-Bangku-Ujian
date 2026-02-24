@@ -37,7 +37,7 @@ function acakArray<T>(array: T[]): void {
 function alokasiRuangUnik(
   muridGroup: Murid[],
   availableRooms: string[],
-  kapasitasPerRuang: number
+  kapasitasRuang: Record<string, number>
 ) {
   // 1. Reset daily room assignment for this group
   const ruangTerisi: Record<string, number> = {};
@@ -75,10 +75,11 @@ function alokasiRuangUnik(
       // Try to find a valid room
       while (attempts < availableRooms.length) {
         const roomName = availableRooms[roomIdx % availableRooms.length];
+        const maxKap = kapasitasRuang[roomName] || 0;
         
         // Check capacity AND history
         if (
-          (ruangTerisi[roomName] || 0) < kapasitasPerRuang &&
+          (ruangTerisi[roomName] || 0) < maxKap &&
           !s.riwayatRuang.includes(roomName)
         ) {
           // Assign
@@ -114,7 +115,8 @@ function alokasiRuangUnik(
 
     let assigned = false;
     for (const roomName of sortedRooms) {
-      if ((ruangTerisi[roomName] || 0) < kapasitasPerRuang) {
+      const maxKap = kapasitasRuang[roomName] || 0;
+      if ((ruangTerisi[roomName] || 0) < maxKap) {
         s.ruangHariIni = roomName;
         s.riwayatRuang.push(roomName);
         ruangTerisi[roomName] = (ruangTerisi[roomName] || 0) + 1;
@@ -125,6 +127,7 @@ function alokasiRuangUnik(
 
     if (!assigned) {
       // Emergency: Overfill the room with least students
+      // This should ideally not happen if capacities are calculated correctly
       const emergencyRoom = sortedRooms[0];
       s.ruangHariIni = emergencyRoom;
       s.riwayatRuang.push(emergencyRoom);
@@ -155,6 +158,17 @@ function alokasiRuangUnik(
       arr[i].jadwal.push(arr[i].bangkuHariIni, arr[i].ruangHariIni);
     }
   }
+}
+
+// Helper to distribute total count into buckets
+function distributeCapacity(total: number, roomCount: number): number[] {
+  const base = Math.floor(total / roomCount);
+  const remainder = total % roomCount;
+  const capacities = Array(roomCount).fill(base);
+  for (let i = 0; i < remainder; i++) {
+    capacities[i]++;
+  }
+  return capacities;
 }
 
 export function processRandomization(
@@ -255,7 +269,7 @@ export function processRandomization(
   const grupData: {
     list: Murid[];
     rooms: string[];
-    kap: number;
+    kapMap: Record<string, number>;
   }[] = [];
 
   if (options.pisahGender) {
@@ -278,27 +292,38 @@ export function processRandomization(
     const roomsP = roomNames.slice(0, ruangP);
     const roomsL = roomNames.slice(ruangP);
 
-    const kapP = roomsP.length > 0 ? Math.ceil(totalP / roomsP.length) : 0;
-    const kapL = roomsL.length > 0 ? Math.ceil(totalL / roomsL.length) : 0;
+    // Calculate capacities for P
+    const capsP = distributeCapacity(totalP, roomsP.length);
+    const kapMapP: Record<string, number> = {};
+    roomsP.forEach((r, i) => kapMapP[r] = capsP[i]);
+
+    // Calculate capacities for L
+    const capsL = distributeCapacity(totalL, roomsL.length);
+    const kapMapL: Record<string, number> = {};
+    roomsL.forEach((r, i) => kapMapL[r] = capsL[i]);
 
     if (totalP > 0)
       grupData.push({
         list: perempuan,
         rooms: roomsP,
-        kap: kapP,
+        kapMap: kapMapP,
       });
     if (totalL > 0)
       grupData.push({
         list: lakiLaki,
         rooms: roomsL,
-        kap: kapL,
+        kapMap: kapMapL,
       });
   } else {
-    const kapasitasPerRuang = Math.ceil(totalMurid / options.jumlahRuang);
+    // Calculate capacities for all
+    const caps = distributeCapacity(totalMurid, options.jumlahRuang);
+    const kapMap: Record<string, number> = {};
+    roomNames.forEach((r, i) => kapMap[r] = caps[i]);
+
     grupData.push({
       list: dataInduk,
       rooms: roomNames,
-      kap: kapasitasPerRuang,
+      kapMap: kapMap,
     });
   }
 
@@ -307,7 +332,7 @@ export function processRandomization(
       alokasiRuangUnik(
         grupData[g].list,
         grupData[g].rooms,
-        grupData[g].kap
+        grupData[g].kapMap
       );
     }
   }
