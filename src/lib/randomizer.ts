@@ -1,0 +1,347 @@
+export interface Murid {
+  nisn: string;
+  nis: string;
+  nama: string;
+  kelas: string;
+  jenjang: string;
+  jk: string;
+  riwayatRuang: string[];
+  jadwal: string[]; // [bangkuHari1, ruangHari1, bangkuHari2, ruangHari2, ...]
+  [key: string]: any;
+}
+
+export interface RandomizerOptions {
+  pisahGender: boolean;
+  jumlahHari: number;
+  jenjang: string;
+  jumlahRuang: number;
+  namaRuang: string[];
+}
+
+export interface RandomizerResult {
+  headers: string[];
+  data: (string | number)[][];
+}
+
+// Fisher-Yates Shuffle
+function acakArray<T>(array: T[]): void {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+function alokasiRuangUnik(
+  muridGroup: Murid[],
+  availableRooms: string[],
+  kapasitasPerRuang: number
+) {
+  // 1. Reset daily room assignment for this group
+  const ruangTerisi: Record<string, number> = {};
+  availableRooms.forEach((r) => {
+    ruangTerisi[r] = 0;
+  });
+
+  // 2. Group students by Class (Kelas) to ensure balanced distribution
+  const studentsByClass: Record<string, Murid[]> = {};
+  muridGroup.forEach((s) => {
+    const k = s.kelas || "Unknown";
+    if (!studentsByClass[k]) studentsByClass[k] = [];
+    studentsByClass[k].push(s);
+  });
+
+  // 3. Shuffle classes order to avoid bias
+  const classes = Object.keys(studentsByClass);
+  acakArray(classes);
+
+  // 4. Distribute each class across rooms
+  const leftover: Murid[] = [];
+
+  classes.forEach((className) => {
+    const studentsInClass = studentsByClass[className];
+    acakArray(studentsInClass); // Shuffle students within the class
+
+    // Try to distribute round-robin to ensure this class is spread out
+    // We start at a random room index for each class to further randomize
+    let roomIdx = Math.floor(Math.random() * availableRooms.length);
+
+    studentsInClass.forEach((s) => {
+      let assigned = false;
+      let attempts = 0;
+
+      // Try to find a valid room
+      while (attempts < availableRooms.length) {
+        const roomName = availableRooms[roomIdx % availableRooms.length];
+        
+        // Check capacity AND history
+        if (
+          (ruangTerisi[roomName] || 0) < kapasitasPerRuang &&
+          !s.riwayatRuang.includes(roomName)
+        ) {
+          // Assign
+          s.ruangHariIni = roomName;
+          s.riwayatRuang.push(roomName);
+          ruangTerisi[roomName] = (ruangTerisi[roomName] || 0) + 1;
+          assigned = true;
+          
+          // Move to next room for next student
+          roomIdx++;
+          break;
+        }
+
+        // Try next room
+        roomIdx++;
+        attempts++;
+      }
+
+      if (!assigned) {
+        leftover.push(s);
+      }
+    });
+  });
+
+  // 5. Handle leftovers (students who couldn't fit due to history constraints)
+  // We relax the history constraint for them, but still respect capacity
+  leftover.forEach((s) => {
+    // Find any room with space
+    // Sort rooms by least filled to maintain balance
+    const sortedRooms = [...availableRooms].sort(
+      (a, b) => (ruangTerisi[a] || 0) - (ruangTerisi[b] || 0)
+    );
+
+    let assigned = false;
+    for (const roomName of sortedRooms) {
+      if ((ruangTerisi[roomName] || 0) < kapasitasPerRuang) {
+        s.ruangHariIni = roomName;
+        s.riwayatRuang.push(roomName);
+        ruangTerisi[roomName] = (ruangTerisi[roomName] || 0) + 1;
+        assigned = true;
+        break;
+      }
+    }
+
+    if (!assigned) {
+      // Emergency: Overfill the room with least students
+      const emergencyRoom = sortedRooms[0];
+      s.ruangHariIni = emergencyRoom;
+      s.riwayatRuang.push(emergencyRoom);
+      ruangTerisi[emergencyRoom]++;
+    }
+  });
+
+  // 6. Assign seats within rooms
+  const perRuang: Record<string, Murid[]> = {};
+  muridGroup.forEach((s) => {
+    if (!perRuang[s.ruangHariIni]) perRuang[s.ruangHariIni] = [];
+    perRuang[s.ruangHariIni].push(s);
+  });
+
+  for (const namaR in perRuang) {
+    const arr = perRuang[namaR];
+    // Shuffle again for seat assignment
+    acakArray(arr);
+    
+    for (let i = 0; i < arr.length; i++) {
+      const noBangku = i + 1;
+      // Format: 'Jenjang.NoBangku (e.g., '7.01)
+      const formatBangku = `'${arr[i].jenjang}.${
+        noBangku < 10 ? "0" + noBangku : noBangku
+      }`;
+
+      arr[i].bangkuHariIni = formatBangku;
+      arr[i].jadwal.push(arr[i].bangkuHariIni, arr[i].ruangHariIni);
+    }
+  }
+}
+
+export function processRandomization(
+  rawData: (string | number)[][],
+  options: RandomizerOptions
+): RandomizerResult {
+  if (!rawData || rawData.length === 0) {
+    throw new Error("Data kosong.");
+  }
+
+  const header = rawData[0].map((h) => String(h).trim().toUpperCase());
+  const dataRows = rawData.slice(1);
+
+  // Column detection
+  let idxNISN = -1,
+    idxNIS = -1,
+    idxNama = -1,
+    idxKelas = -1,
+    idxJenjang = -1,
+    idxJK = -1;
+
+  for (let i = 0; i < header.length; i++) {
+    const judul = header[i];
+    if (judul === "NISN") idxNISN = i;
+    else if (judul === "NIS") idxNIS = i;
+    else if (judul === "NAMA" || judul === "NAMA MURID" || judul === "NAMA SISWA") idxNama = i;
+    else if (judul === "KELAS" || judul === "ROMBEL") idxKelas = i;
+    else if (judul === "JENJANG") idxJenjang = i;
+    else if (
+      judul === "JK" ||
+      judul === "JENIS KELAMIN" ||
+      judul === "L/P"
+    )
+      idxJK = i;
+  }
+
+  const missingHeaders = [];
+  if (idxNama === -1) missingHeaders.push("NAMA");
+  if (idxKelas === -1) missingHeaders.push("KELAS");
+  if (idxJenjang === -1) missingHeaders.push("JENJANG");
+  if (idxJK === -1) missingHeaders.push("JK");
+
+  if (missingHeaders.length > 0) {
+    throw new Error(
+      `Kolom wajib tidak ditemukan: ${missingHeaders.join(
+        ", "
+      )}. Pastikan header Excel/CSV sesuai.`
+    );
+  }
+
+  const dataInduk: Murid[] = [];
+
+  for (let r = 0; r < dataRows.length; r++) {
+    const baris = dataRows[r];
+    // Safe access to columns
+    const jenjangVal = idxJenjang > -1 ? String(baris[idxJenjang]) : "-";
+    
+    if (
+      options.jenjang === "Semua" ||
+      jenjangVal === String(options.jenjang)
+    ) {
+      dataInduk.push({
+        nisn: idxNISN > -1 ? String(baris[idxNISN]) : "-",
+        nis: idxNIS > -1 ? String(baris[idxNIS]) : "-",
+        nama: idxNama > -1 ? String(baris[idxNama]) : "-",
+        kelas: idxKelas > -1 ? String(baris[idxKelas]) : "-",
+        jenjang: jenjangVal,
+        jk: idxJK > -1 ? String(baris[idxJK]) : "-",
+        riwayatRuang: [],
+        jadwal: [],
+      });
+    }
+  }
+
+  const totalMurid = dataInduk.length;
+  if (totalMurid === 0) {
+    throw new Error(
+      "Tidak ada data murid yang cocok dengan pilihan jenjang."
+    );
+  }
+
+  // Use custom room names or default if not provided/enough
+  let roomNames = options.namaRuang;
+  if (!roomNames || roomNames.length !== options.jumlahRuang) {
+     // Fallback if mismatch, though UI should prevent this
+     roomNames = Array.from({ length: options.jumlahRuang }, (_, i) => `R.${i + 1 < 10 ? "0" + (i + 1) : i + 1}`);
+  }
+
+  const grupData: {
+    list: Murid[];
+    rooms: string[];
+    kap: number;
+  }[] = [];
+
+  if (options.pisahGender) {
+    const perempuan = dataInduk.filter(
+      (s) => s.jk.toString().toUpperCase() === "P"
+    );
+    const lakiLaki = dataInduk.filter(
+      (s) => s.jk.toString().toUpperCase() === "L"
+    );
+
+    const totalP = perempuan.length;
+    const totalL = lakiLaki.length;
+
+    let ruangP = Math.round((totalP / totalMurid) * options.jumlahRuang);
+    if (ruangP < 1 && totalP > 0) ruangP = 1;
+    if (ruangP >= options.jumlahRuang && totalL > 0)
+      ruangP = options.jumlahRuang - 1;
+    
+    // Split room names
+    const roomsP = roomNames.slice(0, ruangP);
+    const roomsL = roomNames.slice(ruangP);
+
+    const kapP = roomsP.length > 0 ? Math.ceil(totalP / roomsP.length) : 0;
+    const kapL = roomsL.length > 0 ? Math.ceil(totalL / roomsL.length) : 0;
+
+    if (totalP > 0)
+      grupData.push({
+        list: perempuan,
+        rooms: roomsP,
+        kap: kapP,
+      });
+    if (totalL > 0)
+      grupData.push({
+        list: lakiLaki,
+        rooms: roomsL,
+        kap: kapL,
+      });
+  } else {
+    const kapasitasPerRuang = Math.ceil(totalMurid / options.jumlahRuang);
+    grupData.push({
+      list: dataInduk,
+      rooms: roomNames,
+      kap: kapasitasPerRuang,
+    });
+  }
+
+  for (let hari = 1; hari <= options.jumlahHari; hari++) {
+    for (let g = 0; g < grupData.length; g++) {
+      alokasiRuangUnik(
+        grupData[g].list,
+        grupData[g].rooms,
+        grupData[g].kap
+      );
+    }
+  }
+
+  const headerSheet = ["NISN", "NIS", "NAMA", "KELAS", "JENJANG", "JK"];
+  for (let h = 1; h <= options.jumlahHari; h++) {
+    headerSheet.push("BANGKU HARI " + h);
+    headerSheet.push("RUANG HARI " + h);
+  }
+
+  const outputData: (string | number)[][] = [];
+  for (let i = 0; i < dataInduk.length; i++) {
+    const murid = dataInduk[i];
+    const baris = [
+      murid.nisn,
+      murid.nis,
+      murid.nama,
+      murid.kelas,
+      murid.jenjang,
+      murid.jk,
+      ...murid.jadwal,
+    ];
+    outputData.push(baris);
+  }
+
+  return {
+    headers: headerSheet,
+    data: outputData,
+  };
+}
+
+export const SAMPLE_DATA = [
+  ["NISN", "NIS", "NAMA", "KELAS", "JENJANG", "JK"],
+  ["001", "101", "Ahmad", "7A", "7", "L"],
+  ["002", "102", "Budi", "7A", "7", "L"],
+  ["003", "103", "Citra", "7A", "7", "P"],
+  ["004", "104", "Dewi", "7B", "7", "P"],
+  ["005", "105", "Eko", "7B", "7", "L"],
+  ["006", "106", "Fajar", "8A", "8", "L"],
+  ["007", "107", "Gita", "8A", "8", "P"],
+  ["008", "108", "Hadi", "8B", "8", "L"],
+  ["009", "109", "Indah", "8B", "8", "P"],
+  ["010", "110", "Joko", "9A", "9", "L"],
+  ["011", "111", "Kartika", "9A", "9", "P"],
+  ["012", "112", "Lestari", "9B", "9", "P"],
+  ["013", "113", "Maman", "9B", "9", "L"],
+  ["014", "114", "Nina", "9C", "9", "P"],
+  ["015", "115", "Oki", "9C", "9", "L"],
+];

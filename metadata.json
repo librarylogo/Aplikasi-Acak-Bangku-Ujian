@@ -1,0 +1,5 @@
+{
+  "name": "Aplikasi Acak Bangku Ujian",
+  "description": "Aplikasi modern untuk mengacak ruang dan nomor bangku ujian dengan fitur ekspor Excel.",
+  "requestFramePermissions": []
+}
