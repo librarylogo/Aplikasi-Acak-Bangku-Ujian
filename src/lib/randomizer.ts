@@ -5,6 +5,7 @@ export interface Murid {
   kelas: string;
   jenjang: string;
   jk: string;
+  nomorPeserta?: string;
   riwayatRuang: string[];
   jadwal: string[]; // [bangkuHari1, ruangHari1, bangkuHari2, ruangHari2, ...]
   [key: string]: any;
@@ -16,6 +17,8 @@ export interface RandomizerOptions {
   jenjang: string;
   jumlahRuang: number;
   namaRuang: string[];
+  startNomorPeserta: number;
+  incrementNomorPeserta: number;
 }
 
 export interface RandomizerResult {
@@ -233,6 +236,15 @@ export function processRandomization(
     );
   }
 
+  // Assign Nomor Peserta
+  let currentNo = options.startNomorPeserta || 1;
+  const increment = options.incrementNomorPeserta || 1;
+  
+  for (let i = 0; i < dataInduk.length; i++) {
+    dataInduk[i].nomorPeserta = String(currentNo);
+    currentNo += increment;
+  }
+
   // Use custom room names or default if not provided/enough
   let roomNames = options.namaRuang;
   if (!roomNames || roomNames.length !== options.jumlahRuang) {
@@ -300,7 +312,7 @@ export function processRandomization(
     }
   }
 
-  const headerSheet = ["NISN", "NIS", "NAMA", "KELAS", "JENJANG", "JK"];
+  const headerSheet = ["NO. PESERTA", "NISN", "NIS", "NAMA", "KELAS", "JENJANG", "JK"];
   for (let h = 1; h <= options.jumlahHari; h++) {
     headerSheet.push("BANGKU HARI " + h);
     headerSheet.push("RUANG HARI " + h);
@@ -310,6 +322,7 @@ export function processRandomization(
   for (let i = 0; i < dataInduk.length; i++) {
     const murid = dataInduk[i];
     const baris = [
+      murid.nomorPeserta || "",
       murid.nisn,
       murid.nis,
       murid.nama,

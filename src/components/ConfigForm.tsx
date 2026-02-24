@@ -16,6 +16,8 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
   const [jenjangOptions, setJenjangOptions] = useState<string[]>([]);
   const [jumlahRuang, setJumlahRuang] = useState(5);
   const [namaRuang, setNamaRuang] = useState<string[]>([]);
+  const [startNomorPeserta, setStartNomorPeserta] = useState(1);
+  const [incrementNomorPeserta, setIncrementNomorPeserta] = useState(1);
   const [rawData, setRawData] = useState<any[][]>([]);
   const [fileName, setFileName] = useState<string | null>(null);
 
@@ -113,6 +115,8 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
       jenjang,
       jumlahRuang,
       namaRuang,
+      startNomorPeserta,
+      incrementNomorPeserta,
     });
   };
 
@@ -140,9 +144,9 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
             <button
               type="button"
               onClick={downloadTemplate}
-              className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center font-medium transition-colors"
+              className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-all shadow-sm flex items-center"
             >
-              <Download className="w-3 h-3 mr-1" />
+              <Download className="w-3 h-3 mr-1.5" />
               Template
             </button>
           </div>
@@ -233,6 +237,38 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor="startNomorPeserta" className="block text-xs font-medium text-gray-700">
+                Nomor Peserta Awal
+              </label>
+              <input
+                type="number"
+                id="startNomorPeserta"
+                min="1"
+                value={startNomorPeserta}
+                onChange={(e) => setStartNomorPeserta(parseInt(e.target.value) || 1)}
+                className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                placeholder="Contoh: 73431"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="incrementNomorPeserta" className="block text-xs font-medium text-gray-700">
+                Selisih Nomor Peserta
+              </label>
+              <input
+                type="number"
+                id="incrementNomorPeserta"
+                min="1"
+                value={incrementNomorPeserta}
+                onChange={(e) => setIncrementNomorPeserta(parseInt(e.target.value) || 1)}
+                className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                placeholder="Contoh: 1"
+              />
+            </div>
+          </div>
+
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label htmlFor="jumlahRuang" className="block text-xs font-medium text-gray-700">
@@ -253,9 +289,9 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
             {/* Room Name Editor */}
             <div className="space-y-2">
               <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                Nama Ruang
+                NAMA RUANG (Isikan sesuai dengan nama ruang yang diinginkan)
               </label>
-              <div className="grid grid-cols-2 gap-2 bg-gray-50/50 p-3 rounded-lg border border-gray-200/60 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+              <div className="grid grid-cols-2 gap-2 bg-gray-50/50 p-3 rounded-lg border border-gray-200/60">
                 {namaRuang.map((nama, idx) => (
                   <div key={idx} className="flex items-center group">
                     <span className="text-[10px] text-gray-400 w-5 font-mono">{idx + 1}.</span>
