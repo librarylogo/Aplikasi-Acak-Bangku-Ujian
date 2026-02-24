@@ -28,7 +28,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 font-sans text-gray-900 selection:bg-indigo-100 selection:text-indigo-700">
+    <div className="min-h-screen bg-gray-50/50 font-sans text-gray-900 selection:bg-indigo-100 selection:text-indigo-700 flex flex-col">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/60 sticky top-0 z-50 supports-[backdrop-filter]:bg-white/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -58,10 +58,10 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <main className="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1">
           {/* Left Column: Configuration */}
-          <div className="lg:col-span-4 space-y-6 sticky top-24">
+          <div className="lg:col-span-3 space-y-6 sticky top-24">
             <ConfigForm onProcess={handleProcess} isProcessing={isProcessing} />
             
             {/* Error Message */}
@@ -103,13 +103,13 @@ export default function App() {
           </div>
 
           {/* Right Column: Results */}
-          <div className="lg:col-span-8 w-full min-w-0">
+          <div className="lg:col-span-9 w-full min-w-0 h-full flex flex-col">
             {result ? (
-              <div className="h-[calc(100vh-10rem)] min-h-[600px] rounded-2xl overflow-hidden shadow-lg border border-gray-200/60 bg-white">
-                <ResultTable headers={result.headers} data={result.data} />
+              <div className="flex-1 min-h-[600px] rounded-2xl overflow-hidden shadow-lg border border-gray-200/60 bg-white flex flex-col">
+                <ResultTable headers={result.headers} data={result.data} jenjang={result.jenjang} />
               </div>
             ) : (
-              <div className="h-[500px] flex flex-col items-center justify-center bg-white rounded-2xl border border-dashed border-gray-300 text-gray-400 p-8 text-center shadow-sm">
+              <div className="h-full min-h-[500px] flex flex-col items-center justify-center bg-white rounded-2xl border border-dashed border-gray-300 text-gray-400 p-8 text-center shadow-sm">
                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
                   <LayoutGrid className="w-10 h-10 text-gray-300" />
                 </div>

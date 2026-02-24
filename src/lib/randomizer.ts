@@ -24,6 +24,7 @@ export interface RandomizerOptions {
 export interface RandomizerResult {
   headers: string[];
   data: (string | number)[][];
+  jenjang: string;
 }
 
 // Fisher-Yates Shuffle
@@ -362,6 +363,7 @@ export function processRandomization(
   return {
     headers: headerSheet,
     data: outputData,
+    jenjang: options.jenjang,
   };
 }
 

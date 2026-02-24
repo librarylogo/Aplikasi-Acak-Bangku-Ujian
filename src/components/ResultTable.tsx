@@ -5,16 +5,17 @@ import * as XLSX from "xlsx";
 interface ResultTableProps {
   headers: string[];
   data: (string | number)[][];
+  jenjang: string;
 }
 
-export function ResultTable({ headers, data }: ResultTableProps) {
+export function ResultTable({ headers, data, jenjang }: ResultTableProps) {
   if (!data || data.length === 0) return null;
 
   const handleExport = () => {
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Jadwal Ujian");
-    XLSX.writeFile(wb, "Rekap_Jadwal_Ujian.xlsx");
+    XLSX.writeFile(wb, `Rekap_Acak_Bangku_Jenjang_${jenjang}.xlsx`);
   };
 
   return (
