@@ -13,6 +13,7 @@ export interface Murid {
 
 export interface RandomizerOptions {
   pisahGender: boolean;
+  genderOrder?: "L-P" | "P-L";
   jumlahHari: number;
   jenjang: string;
   jumlahRuang: number;
@@ -297,8 +298,20 @@ export function processRandomization(
       ruangP = options.jumlahRuang - 1;
     
     // Split room names
-    const roomsP = roomNames.slice(0, ruangP);
-    const roomsL = roomNames.slice(ruangP);
+    let roomsP: string[] = [];
+    let roomsL: string[] = [];
+
+    if (options.genderOrder === "P-L") {
+        // Perempuan first
+        roomsP = roomNames.slice(0, ruangP);
+        roomsL = roomNames.slice(ruangP);
+    } else {
+        // L-P: Laki-laki first (Default)
+        // Calculate rooms for L first
+        const ruangL = options.jumlahRuang - ruangP;
+        roomsL = roomNames.slice(0, ruangL);
+        roomsP = roomNames.slice(ruangL);
+    }
 
     // Calculate capacities for P
     const capsP = distributeCapacity(totalP, roomsP.length);

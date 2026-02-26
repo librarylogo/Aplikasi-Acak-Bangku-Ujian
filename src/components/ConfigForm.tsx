@@ -11,6 +11,7 @@ interface ConfigFormProps {
 
 export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
   const [pisahGender, setPisahGender] = useState(false);
+  const [genderOrder, setGenderOrder] = useState<"L-P" | "P-L">("L-P");
   const [jumlahHari, setJumlahHari] = useState(6);
   const [jenjang, setJenjang] = useState("Semua");
   const [jenjangOptions, setJenjangOptions] = useState<string[]>([]);
@@ -111,6 +112,7 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
     }
     onProcess(rawData, {
       pisahGender,
+      genderOrder,
       jumlahHari,
       jenjang,
       jumlahRuang,
@@ -327,6 +329,38 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
                 </span>
               </div>
             </label>
+
+            {pisahGender && (
+              <div className="ml-12 mt-2 p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 animate-in slide-in-from-top-2">
+                <label className="block text-xs font-medium text-indigo-900 mb-1.5">
+                  Urutan Ruang
+                </label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="genderOrder"
+                      value="L-P"
+                      checked={genderOrder === "L-P"}
+                      onChange={() => setGenderOrder("L-P")}
+                      className="text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                    />
+                    <span className="text-xs text-gray-700">Laki-laki dulu (R.01 dst)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="genderOrder"
+                      value="P-L"
+                      checked={genderOrder === "P-L"}
+                      onChange={() => setGenderOrder("P-L")}
+                      className="text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                    />
+                    <span className="text-xs text-gray-700">Perempuan dulu (R.01 dst)</span>
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
