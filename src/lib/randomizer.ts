@@ -21,10 +21,17 @@ export interface RandomizerOptions {
   incrementNomorPeserta: number;
 }
 
+export interface RoomSummary {
+  name: string;
+  count: number;
+  genderCounts: { L: number; P: number };
+}
+
 export interface RandomizerResult {
   headers: string[];
   data: (string | number)[][];
   jenjang: string;
+  roomSummary: RoomSummary[];
 }
 
 // Fisher-Yates Shuffle
@@ -360,10 +367,36 @@ export function processRandomization(
     outputData.push(baris);
   }
 
+  // Calculate Room Summary
+  const roomCounts: Record<string, { total: number; L: number; P: number }> = {};
+  
+  // Initialize with all room names
+  roomNames.forEach(r => {
+      roomCounts[r] = { total: 0, L: 0, P: 0 };
+  });
+
+  dataInduk.forEach(murid => {
+      // Use the room from the first day
+      const room = murid.riwayatRuang[0]; 
+      if (room && roomCounts[room]) {
+          roomCounts[room].total++;
+          const jk = murid.jk.toString().toUpperCase();
+          if (jk === 'L') roomCounts[room].L++;
+          else if (jk === 'P') roomCounts[room].P++;
+      }
+  });
+
+  const roomSummary: RoomSummary[] = Object.entries(roomCounts).map(([name, counts]) => ({
+      name,
+      count: counts.total,
+      genderCounts: { L: counts.L, P: counts.P }
+  }));
+
   return {
     headers: headerSheet,
     data: outputData,
     jenjang: options.jenjang,
+    roomSummary,
   };
 }
 

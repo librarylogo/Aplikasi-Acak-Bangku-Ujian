@@ -106,7 +106,12 @@ export default function App() {
           <div className="lg:col-span-9 w-full min-w-0 h-full flex flex-col">
             {result ? (
               <div className="flex-1 min-h-[600px] rounded-2xl overflow-hidden shadow-lg border border-gray-200/60 bg-white flex flex-col">
-                <ResultTable headers={result.headers} data={result.data} jenjang={result.jenjang} />
+                <ResultTable 
+                  headers={result.headers} 
+                  data={result.data} 
+                  jenjang={result.jenjang} 
+                  roomSummary={result.roomSummary}
+                />
               </div>
             ) : (
               <div className="h-full min-h-[500px] flex flex-col items-center justify-center bg-white rounded-2xl border border-dashed border-gray-300 text-gray-400 p-8 text-center shadow-sm">
