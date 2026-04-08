@@ -10,7 +10,7 @@ interface ConfigFormProps {
 }
 
 export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
-  const [pisahGender, setPisahGender] = useState(false);
+  const [modeGender, setModeGender] = useState<"campur" | "pisah" | "seling">("campur");
   const [genderOrder, setGenderOrder] = useState<"L-P" | "P-L">("L-P");
   const [jumlahHari, setJumlahHari] = useState(6);
   const [jenjang, setJenjang] = useState("Semua");
@@ -111,7 +111,7 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
       return;
     }
     onProcess(rawData, {
-      pisahGender,
+      modeGender,
       genderOrder,
       jumlahHari,
       jenjang,
@@ -309,31 +309,61 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
             </div>
           </div>
 
-          <div className="pt-2">
-            <label className="flex items-start space-x-3 cursor-pointer group p-3 rounded-lg border border-gray-200 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all">
-              <div className="relative mt-0.5">
-                <input
-                  type="checkbox"
-                  checked={pisahGender}
-                  onChange={(e) => setPisahGender(e.target.checked)}
-                  className="peer sr-only"
-                />
-                <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-              </div>
-              <div className="flex-1">
-                <span className="block text-sm font-medium text-gray-700 group-hover:text-indigo-900">
-                  Pisah Gender (L/P)
-                </span>
-                <span className="block text-xs text-gray-500 mt-0.5">
-                  Ruang ujian akan dipisahkan antara laki-laki dan perempuan.
-                </span>
-              </div>
+          <div className="pt-2 space-y-3">
+            <label className="block text-xs font-medium text-gray-700">
+              Mode Pengaturan Gender
             </label>
+            <div className="grid grid-cols-1 gap-2">
+              <label className={cn("flex items-start space-x-3 cursor-pointer p-3 rounded-lg border transition-all", modeGender === "campur" ? "border-indigo-500 bg-indigo-50/30" : "border-gray-200 hover:border-indigo-200")}>
+                <input
+                  type="radio"
+                  name="modeGender"
+                  value="campur"
+                  checked={modeGender === "campur"}
+                  onChange={() => setModeGender("campur")}
+                  className="mt-0.5 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                />
+                <div className="flex-1">
+                  <span className="block text-sm font-medium text-gray-900">Campur Bebas</span>
+                  <span className="block text-xs text-gray-500 mt-0.5">Laki-laki dan perempuan dicampur secara acak.</span>
+                </div>
+              </label>
 
-            {pisahGender && (
-              <div className="ml-12 mt-2 p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 animate-in slide-in-from-top-2">
+              <label className={cn("flex items-start space-x-3 cursor-pointer p-3 rounded-lg border transition-all", modeGender === "pisah" ? "border-indigo-500 bg-indigo-50/30" : "border-gray-200 hover:border-indigo-200")}>
+                <input
+                  type="radio"
+                  name="modeGender"
+                  value="pisah"
+                  checked={modeGender === "pisah"}
+                  onChange={() => setModeGender("pisah")}
+                  className="mt-0.5 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                />
+                <div className="flex-1">
+                  <span className="block text-sm font-medium text-gray-900">Pisah Ruang (L/P)</span>
+                  <span className="block text-xs text-gray-500 mt-0.5">Ruang ujian dipisah antara laki-laki dan perempuan.</span>
+                </div>
+              </label>
+
+              <label className={cn("flex items-start space-x-3 cursor-pointer p-3 rounded-lg border transition-all", modeGender === "seling" ? "border-indigo-500 bg-indigo-50/30" : "border-gray-200 hover:border-indigo-200")}>
+                <input
+                  type="radio"
+                  name="modeGender"
+                  value="seling"
+                  checked={modeGender === "seling"}
+                  onChange={() => setModeGender("seling")}
+                  className="mt-0.5 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                />
+                <div className="flex-1">
+                  <span className="block text-sm font-medium text-gray-900">Seling Tempat Duduk</span>
+                  <span className="block text-xs text-gray-500 mt-0.5">Jumlah L dan P seimbang di tiap ruang, duduk berselang-seling.</span>
+                </div>
+              </label>
+            </div>
+
+            {(modeGender === "pisah" || modeGender === "seling") && (
+              <div className="ml-8 mt-2 p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 animate-in slide-in-from-top-2">
                 <label className="block text-xs font-medium text-indigo-900 mb-1.5">
-                  Urutan Ruang
+                  {modeGender === "pisah" ? "Urutan Ruang" : "Urutan Duduk"}
                 </label>
                 <div className="flex flex-col gap-2">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -345,7 +375,9 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
                       onChange={() => setGenderOrder("L-P")}
                       className="text-indigo-600 focus:ring-indigo-500 border-gray-300"
                     />
-                    <span className="text-xs text-gray-700">Laki-laki dulu (R.01 dst)</span>
+                    <span className="text-xs text-gray-700">
+                      {modeGender === "pisah" ? "Laki-laki dulu (R.01 dst)" : "Laki-laki dulu (L, P, L, P...)"}
+                    </span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -356,7 +388,9 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
                       onChange={() => setGenderOrder("P-L")}
                       className="text-indigo-600 focus:ring-indigo-500 border-gray-300"
                     />
-                    <span className="text-xs text-gray-700">Perempuan dulu (R.01 dst)</span>
+                    <span className="text-xs text-gray-700">
+                      {modeGender === "pisah" ? "Perempuan dulu (R.01 dst)" : "Perempuan dulu (P, L, P, L...)"}
+                    </span>
                   </label>
                 </div>
               </div>

@@ -12,7 +12,7 @@ export interface Murid {
 }
 
 export interface RandomizerOptions {
-  pisahGender: boolean;
+  modeGender: "campur" | "pisah" | "seling";
   genderOrder?: "L-P" | "P-L";
   jumlahHari: number;
   jenjang: string;
@@ -143,28 +143,58 @@ function alokasiRuangUnik(
       ruangTerisi[emergencyRoom]++;
     }
   });
+}
 
-  // 6. Assign seats within rooms
+function assignSeats(allMurid: Murid[], modeGender: string, genderOrder?: "L-P" | "P-L") {
   const perRuang: Record<string, Murid[]> = {};
-  muridGroup.forEach((s) => {
+  allMurid.forEach((s) => {
     if (!perRuang[s.ruangHariIni]) perRuang[s.ruangHariIni] = [];
     perRuang[s.ruangHariIni].push(s);
   });
 
   for (const namaR in perRuang) {
     const arr = perRuang[namaR];
-    // Shuffle again for seat assignment
-    acakArray(arr);
     
-    for (let i = 0; i < arr.length; i++) {
-      const noBangku = i + 1;
-      // Format: 'Jenjang.NoBangku (e.g., '7.01)
-      const formatBangku = `'${arr[i].jenjang}.${
-        noBangku < 10 ? "0" + noBangku : noBangku
-      }`;
+    if (modeGender === "seling") {
+      const arrL = arr.filter(s => s.jk.toUpperCase() === 'L');
+      const arrP = arr.filter(s => s.jk.toUpperCase() === 'P');
+      acakArray(arrL);
+      acakArray(arrP);
+      
+      const combined: Murid[] = [];
+      const maxLen = Math.max(arrL.length, arrP.length);
+      const startWithL = genderOrder !== "P-L"; // Default L-P
+      
+      for (let i = 0; i < maxLen; i++) {
+        if (startWithL) {
+          if (i < arrL.length) combined.push(arrL[i]);
+          if (i < arrP.length) combined.push(arrP[i]);
+        } else {
+          if (i < arrP.length) combined.push(arrP[i]);
+          if (i < arrL.length) combined.push(arrL[i]);
+        }
+      }
+      
+      for (let i = 0; i < combined.length; i++) {
+        const noBangku = i + 1;
+        const formatBangku = `'${combined[i].jenjang}.${noBangku < 10 ? "0" + noBangku : noBangku}`;
+        combined[i].bangkuHariIni = formatBangku;
+        combined[i].jadwal.push(combined[i].bangkuHariIni, combined[i].ruangHariIni);
+      }
+    } else {
+      // Shuffle again for seat assignment
+      acakArray(arr);
+      
+      for (let i = 0; i < arr.length; i++) {
+        const noBangku = i + 1;
+        // Format: 'Jenjang.NoBangku (e.g., '7.01)
+        const formatBangku = `'${arr[i].jenjang}.${
+          noBangku < 10 ? "0" + noBangku : noBangku
+        }`;
 
-      arr[i].bangkuHariIni = formatBangku;
-      arr[i].jadwal.push(arr[i].bangkuHariIni, arr[i].ruangHariIni);
+        arr[i].bangkuHariIni = formatBangku;
+        arr[i].jadwal.push(arr[i].bangkuHariIni, arr[i].ruangHariIni);
+      }
     }
   }
 }
@@ -281,7 +311,7 @@ export function processRandomization(
     kapMap: Record<string, number>;
   }[] = [];
 
-  if (options.pisahGender) {
+  if (options.modeGender === "pisah") {
     const perempuan = dataInduk.filter(
       (s) => s.jk.toString().toUpperCase() === "P"
     );
@@ -335,6 +365,39 @@ export function processRandomization(
         rooms: roomsL,
         kapMap: kapMapL,
       });
+  } else if (options.modeGender === "seling") {
+    const perempuan = dataInduk.filter(
+      (s) => s.jk.toString().toUpperCase() === "P"
+    );
+    const lakiLaki = dataInduk.filter(
+      (s) => s.jk.toString().toUpperCase() === "L"
+    );
+
+    const totalP = perempuan.length;
+    const totalL = lakiLaki.length;
+
+    // Calculate capacities for P across ALL rooms
+    const capsP = distributeCapacity(totalP, options.jumlahRuang);
+    const kapMapP: Record<string, number> = {};
+    roomNames.forEach((r, i) => kapMapP[r] = capsP[i]);
+
+    // Calculate capacities for L across ALL rooms
+    const capsL = distributeCapacity(totalL, options.jumlahRuang);
+    const kapMapL: Record<string, number> = {};
+    roomNames.forEach((r, i) => kapMapL[r] = capsL[i]);
+
+    if (totalP > 0)
+      grupData.push({
+        list: perempuan,
+        rooms: roomNames,
+        kapMap: kapMapP,
+      });
+    if (totalL > 0)
+      grupData.push({
+        list: lakiLaki,
+        rooms: roomNames,
+        kapMap: kapMapL,
+      });
   } else {
     // Calculate capacities for all
     const caps = distributeCapacity(totalMurid, options.jumlahRuang);
@@ -356,6 +419,7 @@ export function processRandomization(
         grupData[g].kapMap
       );
     }
+    assignSeats(dataInduk, options.modeGender, options.genderOrder);
   }
 
   const headerSheet = ["NO. PESERTA", "NISN", "NIS", "NAMA", "KELAS", "JENJANG", "JK"];
