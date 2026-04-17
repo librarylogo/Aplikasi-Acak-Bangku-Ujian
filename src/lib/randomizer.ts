@@ -376,15 +376,47 @@ export function processRandomization(
     const totalP = perempuan.length;
     const totalL = lakiLaki.length;
 
-    // Calculate capacities for P across ALL rooms
-    const capsP = distributeCapacity(totalP, options.jumlahRuang);
+    // Calculate overall base capacities across all rooms
+    const caps = distributeCapacity(totalMurid, options.jumlahRuang);
     const kapMapP: Record<string, number> = {};
-    roomNames.forEach((r, i) => kapMapP[r] = capsP[i]);
-
-    // Calculate capacities for L across ALL rooms
-    const capsL = distributeCapacity(totalL, options.jumlahRuang);
     const kapMapL: Record<string, number> = {};
-    roomNames.forEach((r, i) => kapMapL[r] = capsL[i]);
+
+    let remainingP = totalP;
+    let remainingL = totalL;
+
+    // First pass: try to give half of the room's capacity to P and half to L
+    for (let i = 0; i < options.jumlahRuang; i++) {
+       const roomName = roomNames[i];
+       const half = Math.floor(caps[i] / 2);
+       
+       const giveP = Math.min(half, remainingP);
+       kapMapP[roomName] = giveP;
+       remainingP -= giveP;
+       
+       const giveL = Math.min(half, remainingL);
+       kapMapL[roomName] = giveL;
+       remainingL -= giveL;
+    }
+
+    // Second pass: fill any remaining space in rooms with whatever gender is left
+    for (let i = 0; i < options.jumlahRuang; i++) {
+        const roomName = roomNames[i];
+        let space = caps[i] - kapMapP[roomName] - kapMapL[roomName];
+        
+        if (space > 0 && remainingP > 0) {
+            const giveP = Math.min(space, remainingP);
+            kapMapP[roomName] += giveP;
+            remainingP -= giveP;
+            space -= giveP;
+        }
+        
+        if (space > 0 && remainingL > 0) {
+            const giveL = Math.min(space, remainingL);
+            kapMapL[roomName] += giveL;
+            remainingL -= giveL;
+            space -= giveL;
+        }
+    }
 
     if (totalP > 0)
       grupData.push({
