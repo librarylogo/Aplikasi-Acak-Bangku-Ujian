@@ -123,37 +123,37 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-6 space-y-6">
+    <div className="glass-panel rounded-2xl shadow-xl shadow-indigo-950/5 border border-white/70 p-6 space-y-6">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <div className="p-1.5 bg-indigo-50 rounded-lg">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <div className="p-1.5 bg-indigo-50/80 backdrop-blur-sm border border-indigo-100 rounded-xl">
             <Settings className="w-4 h-4 text-indigo-600" />
           </div>
           Konfigurasi & Data
         </h2>
-        <p className="text-xs text-gray-500 ml-9">
+        <p className="text-xs text-slate-500 ml-8">
           Upload data murid dan atur parameter ujian.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Data Input Section */}
-        <div className="p-5 bg-gray-50/50 rounded-xl border border-gray-200/60 space-y-4">
+        <div className="p-4 glass-card rounded-xl border border-white/80 space-y-3.5 shadow-xs">
           <div className="flex items-center justify-between">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               Sumber Data
             </label>
             <button
               type="button"
               onClick={downloadTemplate}
-              className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-all shadow-sm flex items-center"
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg hover:shadow-xs transition-all flex items-center shadow-sm"
             >
               <Download className="w-3 h-3 mr-1.5" />
               Template
             </button>
           </div>
           
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             <div className="relative w-full group">
               <input
                 type="file"
@@ -161,16 +161,16 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
                 onChange={handleFileUpload}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
-              <div className="flex items-center justify-center w-full h-11 px-4 bg-white border border-gray-300 border-dashed rounded-lg text-sm text-gray-600 group-hover:bg-gray-50 group-hover:border-indigo-300 transition-all duration-200">
-                <Upload className="w-4 h-4 mr-2 text-gray-400 group-hover:text-indigo-500" />
-                {fileName ? <span className="text-gray-900 font-medium truncate">{fileName}</span> : "Upload Excel/CSV"}
+              <div className="flex items-center justify-center w-full h-11 px-4 bg-white/70 border border-indigo-200/80 border-dashed rounded-xl text-sm text-slate-600 group-hover:bg-white group-hover:border-indigo-400 backdrop-blur-sm transition-all duration-200 shadow-xs">
+                <Upload className="w-4 h-4 mr-2 text-indigo-400 group-hover:text-indigo-600" />
+                {fileName ? <span className="text-slate-900 font-medium truncate">{fileName}</span> : "Upload Excel/CSV"}
               </div>
             </div>
             
             <button
               type="button"
               onClick={loadSampleData}
-              className="flex items-center justify-center w-full h-9 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+              className="flex items-center justify-center w-full h-9 bg-white/70 hover:bg-white border border-white/90 rounded-xl text-xs font-medium text-slate-700 hover:text-indigo-600 transition-all shadow-xs backdrop-blur-sm"
             >
               <RotateCcw className="w-3 h-3 mr-1.5" />
               Gunakan Data Sample
@@ -178,9 +178,9 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
           </div>
           
           {rawData.length > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-green-50/50 border border-green-100 rounded-lg">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs text-green-700 font-medium">
+            <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 backdrop-blur-sm border border-emerald-300/40 rounded-xl">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs text-emerald-700 font-medium">
                 {rawData.length - 1} data murid siap diproses
               </span>
             </div>
@@ -191,7 +191,7 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
         <div className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label htmlFor="jenjang" className="block text-xs font-medium text-gray-700">
+              <label htmlFor="jenjang" className="block text-xs font-medium text-slate-700">
                 Jenjang / Kelas
               </label>
               <div className="relative">
@@ -199,7 +199,7 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
                   id="jenjang"
                   value={jenjang}
                   onChange={(e) => setJenjang(e.target.value)}
-                  className="w-full h-10 pl-3 pr-8 rounded-lg border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none"
+                  className="w-full h-10 pl-3 pr-8 rounded-xl border border-slate-200/80 bg-white/70 backdrop-blur-sm text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none shadow-xs"
                 >
                   <option value="Semua">Semua Jenjang</option>
                   {jenjangOptions.map((opt) => (
@@ -218,14 +218,14 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
                     </>
                   )}
                 </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-gray-400">
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-400">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="jumlahHari" className="block text-xs font-medium text-gray-700">
+              <label htmlFor="jumlahHari" className="block text-xs font-medium text-slate-700">
                 Durasi Ujian (Hari)
               </label>
               <input
@@ -234,14 +234,14 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
                 min="1"
                 value={jumlahHari}
                 onChange={(e) => setJumlahHari(parseInt(e.target.value) || 1)}
-                className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                className="w-full h-10 px-3 rounded-xl border border-slate-200/80 bg-white/70 backdrop-blur-sm text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-xs"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label htmlFor="startNomorPeserta" className="block text-xs font-medium text-gray-700">
+              <label htmlFor="startNomorPeserta" className="block text-xs font-medium text-slate-700">
                 Nomor Peserta Awal
               </label>
               <input
@@ -250,14 +250,14 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
                 min="1"
                 value={startNomorPeserta}
                 onChange={(e) => setStartNomorPeserta(parseInt(e.target.value) || 1)}
-                className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                className="w-full h-10 px-3 rounded-xl border border-slate-200/80 bg-white/70 backdrop-blur-sm text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-xs"
                 placeholder="Contoh: 73431"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="incrementNomorPeserta" className="block text-xs font-medium text-gray-700">
-                Selisih Nomor Peserta
+              <label htmlFor="incrementNomorPeserta" className="block text-xs font-medium text-slate-700">
+                Selisih Nomor
               </label>
               <input
                 type="number"
@@ -265,7 +265,7 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
                 min="1"
                 value={incrementNomorPeserta}
                 onChange={(e) => setIncrementNomorPeserta(parseInt(e.target.value) || 1)}
-                className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                className="w-full h-10 px-3 rounded-xl border border-slate-200/80 bg-white/70 backdrop-blur-sm text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-xs"
                 placeholder="Contoh: 1"
               />
             </div>
@@ -273,10 +273,10 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label htmlFor="jumlahRuang" className="block text-xs font-medium text-gray-700">
+              <label htmlFor="jumlahRuang" className="block text-xs font-medium text-slate-700">
                 Jumlah Ruang
               </label>
-              <span className="text-[10px] text-gray-400">Maksimal 50 ruang</span>
+              <span className="text-[10px] text-slate-400 font-medium">Maksimal 50 ruang</span>
             </div>
             <input
               type="number"
@@ -285,23 +285,23 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
               max="50"
               value={jumlahRuang}
               onChange={(e) => setJumlahRuang(parseInt(e.target.value) || 1)}
-              className="w-full h-10 px-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              className="w-full h-10 px-3 rounded-xl border border-slate-200/80 bg-white/70 backdrop-blur-sm text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-xs"
             />
             
             {/* Room Name Editor */}
             <div className="space-y-2">
-              <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                NAMA RUANG (Isikan sesuai dengan nama ruang yang diinginkan)
+              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                NAMA RUANG (Sesuai Kebutuhan)
               </label>
-              <div className="grid grid-cols-2 gap-2 bg-gray-50/50 p-3 rounded-lg border border-gray-200/60">
+              <div className="grid grid-cols-2 gap-2 glass-card p-3 rounded-xl border border-white/80 shadow-xs">
                 {namaRuang.map((nama, idx) => (
                   <div key={idx} className="flex items-center group">
-                    <span className="text-[10px] text-gray-400 w-5 font-mono">{idx + 1}.</span>
+                    <span className="text-[10px] text-slate-400 w-5 font-mono">{idx + 1}.</span>
                     <input
                       type="text"
                       value={nama}
                       onChange={(e) => handleRoomNameChange(idx, e.target.value)}
-                      className="w-full h-7 px-2 text-xs border border-gray-200 rounded focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 bg-white transition-all"
+                      className="w-full h-7 px-2 text-xs border border-slate-200/80 rounded-lg focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 bg-white/80 transition-all shadow-xs"
                     />
                   </div>
                 ))}
@@ -310,59 +310,59 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
           </div>
 
           <div className="pt-2 space-y-3">
-            <label className="block text-xs font-medium text-gray-700">
+            <label className="block text-xs font-medium text-slate-700">
               Mode Pengaturan Gender
             </label>
             <div className="grid grid-cols-1 gap-2">
-              <label className={cn("flex items-start space-x-3 cursor-pointer p-3 rounded-lg border transition-all", modeGender === "campur" ? "border-indigo-500 bg-indigo-50/30" : "border-gray-200 hover:border-indigo-200")}>
+              <label className={cn("flex items-start space-x-3 cursor-pointer p-3 rounded-xl border transition-all", modeGender === "campur" ? "border-indigo-500/80 bg-indigo-50/70 backdrop-blur-sm shadow-xs ring-1 ring-indigo-500/30" : "glass-card border-white/80 bg-white/50 hover:bg-white/80 hover:border-indigo-200")}>
                 <input
                   type="radio"
                   name="modeGender"
                   value="campur"
                   checked={modeGender === "campur"}
                   onChange={() => setModeGender("campur")}
-                  className="mt-0.5 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                  className="mt-0.5 text-indigo-600 focus:ring-indigo-500 border-slate-300"
                 />
                 <div className="flex-1">
-                  <span className="block text-sm font-medium text-gray-900">Campur Bebas</span>
-                  <span className="block text-xs text-gray-500 mt-0.5">Laki-laki dan perempuan dicampur secara acak.</span>
+                  <span className="block text-sm font-semibold text-slate-900">Campur Bebas</span>
+                  <span className="block text-xs text-slate-500 mt-0.5">Laki-laki dan perempuan dicampur secara acak.</span>
                 </div>
               </label>
 
-              <label className={cn("flex items-start space-x-3 cursor-pointer p-3 rounded-lg border transition-all", modeGender === "pisah" ? "border-indigo-500 bg-indigo-50/30" : "border-gray-200 hover:border-indigo-200")}>
+              <label className={cn("flex items-start space-x-3 cursor-pointer p-3 rounded-xl border transition-all", modeGender === "pisah" ? "border-indigo-500/80 bg-indigo-50/70 backdrop-blur-sm shadow-xs ring-1 ring-indigo-500/30" : "glass-card border-white/80 bg-white/50 hover:bg-white/80 hover:border-indigo-200")}>
                 <input
                   type="radio"
                   name="modeGender"
                   value="pisah"
                   checked={modeGender === "pisah"}
                   onChange={() => setModeGender("pisah")}
-                  className="mt-0.5 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                  className="mt-0.5 text-indigo-600 focus:ring-indigo-500 border-slate-300"
                 />
                 <div className="flex-1">
-                  <span className="block text-sm font-medium text-gray-900">Pisah Ruang (L/P)</span>
-                  <span className="block text-xs text-gray-500 mt-0.5">Ruang ujian dipisah antara laki-laki dan perempuan.</span>
+                  <span className="block text-sm font-semibold text-slate-900">Pisah Ruang (L/P)</span>
+                  <span className="block text-xs text-slate-500 mt-0.5">Ruang ujian dipisah antara laki-laki dan perempuan.</span>
                 </div>
               </label>
 
-              <label className={cn("flex items-start space-x-3 cursor-pointer p-3 rounded-lg border transition-all", modeGender === "seling" ? "border-indigo-500 bg-indigo-50/30" : "border-gray-200 hover:border-indigo-200")}>
+              <label className={cn("flex items-start space-x-3 cursor-pointer p-3 rounded-xl border transition-all", modeGender === "seling" ? "border-indigo-500/80 bg-indigo-50/70 backdrop-blur-sm shadow-xs ring-1 ring-indigo-500/30" : "glass-card border-white/80 bg-white/50 hover:bg-white/80 hover:border-indigo-200")}>
                 <input
                   type="radio"
                   name="modeGender"
                   value="seling"
                   checked={modeGender === "seling"}
                   onChange={() => setModeGender("seling")}
-                  className="mt-0.5 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                  className="mt-0.5 text-indigo-600 focus:ring-indigo-500 border-slate-300"
                 />
                 <div className="flex-1">
-                  <span className="block text-sm font-medium text-gray-900">Seling Tempat Duduk</span>
-                  <span className="block text-xs text-gray-500 mt-0.5">Jumlah L dan P seimbang di tiap ruang, duduk berselang-seling.</span>
+                  <span className="block text-sm font-semibold text-slate-900">Seling Tempat Duduk</span>
+                  <span className="block text-xs text-slate-500 mt-0.5">Jumlah L dan P seimbang di tiap ruang, duduk berselang-seling.</span>
                 </div>
               </label>
             </div>
 
             {(modeGender === "pisah" || modeGender === "seling") && (
-              <div className="ml-8 mt-2 p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 animate-in slide-in-from-top-2">
-                <label className="block text-xs font-medium text-indigo-900 mb-1.5">
+              <div className="ml-4 mt-2 p-3 bg-indigo-50/60 backdrop-blur-md rounded-xl border border-indigo-200/60 shadow-xs animate-in slide-in-from-top-2">
+                <label className="block text-xs font-semibold text-indigo-900 mb-1.5">
                   {modeGender === "pisah" ? "Urutan Ruang" : "Urutan Duduk"}
                 </label>
                 <div className="flex flex-col gap-2">
@@ -373,9 +373,9 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
                       value="L-P"
                       checked={genderOrder === "L-P"}
                       onChange={() => setGenderOrder("L-P")}
-                      className="text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                      className="text-indigo-600 focus:ring-indigo-500 border-slate-300"
                     />
-                    <span className="text-xs text-gray-700">
+                    <span className="text-xs text-slate-700 font-medium">
                       {modeGender === "pisah" ? "Laki-laki dulu (R.01 dst)" : "Laki-laki dulu (L, P, L, P...)"}
                     </span>
                   </label>
@@ -386,9 +386,9 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
                       value="P-L"
                       checked={genderOrder === "P-L"}
                       onChange={() => setGenderOrder("P-L")}
-                      className="text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                      className="text-indigo-600 focus:ring-indigo-500 border-slate-300"
                     />
-                    <span className="text-xs text-gray-700">
+                    <span className="text-xs text-slate-700 font-medium">
                       {modeGender === "pisah" ? "Perempuan dulu (R.01 dst)" : "Perempuan dulu (P, L, P, L...)"}
                     </span>
                   </label>
@@ -402,10 +402,10 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
           type="submit"
           disabled={isProcessing || rawData.length === 0}
           className={cn(
-            "w-full flex items-center justify-center h-12 rounded-xl text-white font-medium transition-all shadow-sm relative overflow-hidden",
+            "w-full flex items-center justify-center h-12 rounded-xl text-white font-semibold transition-all shadow-lg relative overflow-hidden active:scale-[0.98]",
             isProcessing || rawData.length === 0
-              ? "bg-gray-300 cursor-not-allowed"
-              : "bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 hover:shadow-md hover:shadow-indigo-200 active:scale-[0.98]"
+              ? "bg-slate-300 cursor-not-allowed shadow-none"
+              : "bg-gradient-to-r from-indigo-600 via-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 shadow-indigo-500/25"
           )}
         >
           {isProcessing ? (
