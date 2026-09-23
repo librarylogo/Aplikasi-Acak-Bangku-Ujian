@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { Upload, FileText, Play, RotateCcw, Download, Settings, Users } from "lucide-react";
-import { SAMPLE_DATA } from "@/lib/randomizer";
+import React, { useState, useEffect, useMemo } from "react";
+import { Upload, FileText, Play, RotateCcw, Download, Settings, Users, Calendar, Sparkles, Check } from "lucide-react";
+import { SAMPLE_DATA, HARI_DALAM_SEMINGGU, hitungHariUjian } from "@/lib/randomizer";
 import { cn } from "@/lib/utils";
 import * as XLSX from "xlsx";
 
@@ -13,6 +13,9 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
   const [modeGender, setModeGender] = useState<"campur" | "pisah" | "seling">("campur");
   const [genderOrder, setGenderOrder] = useState<"L-P" | "P-L">("L-P");
   const [jumlahHari, setJumlahHari] = useState(6);
+  const [hariMulai, setHariMulai] = useState("Senin");
+  const [hariLibur, setHariLibur] = useState<string[]>(["Minggu"]);
+  const [jumlahPiketPerHari, setJumlahPiketPerHari] = useState(6);
   const [jenjang, setJenjang] = useState("Semua");
   const [jenjangOptions, setJenjangOptions] = useState<string[]>([]);
   const [jumlahRuang, setJumlahRuang] = useState(5);
@@ -21,6 +24,21 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
   const [incrementNomorPeserta, setIncrementNomorPeserta] = useState(1);
   const [rawData, setRawData] = useState<any[][]>([]);
   const [fileName, setFileName] = useState<string | null>(null);
+
+  // Active exam days preview
+  const activeExamDays = useMemo(() => {
+    return hitungHariUjian(hariMulai, hariLibur, jumlahHari);
+  }, [hariMulai, hariLibur, jumlahHari]);
+
+  const toggleHariLibur = (hari: string) => {
+    setHariLibur((prev) => {
+      if (prev.includes(hari)) {
+        return prev.filter((h) => h !== hari);
+      } else {
+        return [...prev, hari];
+      }
+    });
+  };
 
   // Initialize room names when jumlahRuang changes
   useEffect(() => {
@@ -119,6 +137,9 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
       namaRuang,
       startNomorPeserta,
       incrementNomorPeserta,
+      hariMulai,
+      hariLibur,
+      jumlahPiketPerHari,
     });
   };
 
@@ -236,6 +257,116 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
                 onChange={(e) => setJumlahHari(parseInt(e.target.value) || 1)}
                 className="w-full h-10 px-3 rounded-xl border border-slate-200/80 bg-white/70 backdrop-blur-sm text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-xs"
               />
+            </div>
+          </div>
+
+          {/* Pengaturan Jadwal Hari & Piket Murid */}
+          <div className="p-4 glass-card rounded-2xl border border-indigo-200/70 bg-gradient-to-br from-indigo-50/70 via-purple-50/30 to-white/60 space-y-3.5 shadow-xs backdrop-blur-md">
+            <div className="flex items-center justify-between border-b border-indigo-100/80 pb-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-lg bg-indigo-100/80 text-indigo-700">
+                  <Calendar className="w-3.5 h-3.5" />
+                </div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-indigo-950">
+                  Jadwal Ujian & Piket Ruang
+                </label>
+              </div>
+              <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded-full border border-indigo-200/60">
+                {jumlahPiketPerHari} Murid / Hari / Ruang
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3.5">
+              <div className="space-y-1.5">
+                <label htmlFor="hariMulai" className="block text-xs font-medium text-slate-700">
+                  Ujian Dimulai Hari
+                </label>
+                <div className="relative">
+                  <select
+                    id="hariMulai"
+                    value={hariMulai}
+                    onChange={(e) => setHariMulai(e.target.value)}
+                    className="w-full h-10 pl-3 pr-8 rounded-xl border border-slate-200/80 bg-white/80 backdrop-blur-sm text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none shadow-xs font-medium text-slate-800"
+                  >
+                    {HARI_DALAM_SEMINGGU.map((hari) => (
+                      <option key={hari} value={hari}>
+                        {hari}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="jumlahPiket" className="block text-xs font-medium text-slate-700">
+                  Murid Piket per Ruang
+                </label>
+                <input
+                  type="number"
+                  id="jumlahPiket"
+                  min="1"
+                  max="30"
+                  value={jumlahPiketPerHari}
+                  onChange={(e) => setJumlahPiketPerHari(parseInt(e.target.value) || 6)}
+                  className="w-full h-10 px-3 rounded-xl border border-slate-200/80 bg-white/80 backdrop-blur-sm text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-xs"
+                />
+              </div>
+            </div>
+
+            {/* Hari Libur Sekolah */}
+            <div className="space-y-1.5 pt-0.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                  Hari Libur Sekolah (Dilewati)
+                </label>
+                <span className="text-[10px] text-slate-400">Klik hari untuk libur</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {HARI_DALAM_SEMINGGU.map((hari) => {
+                  const isLibur = hariLibur.includes(hari);
+                  return (
+                    <button
+                      key={hari}
+                      type="button"
+                      onClick={() => toggleHariLibur(hari)}
+                      className={cn(
+                        "px-2.5 py-1 text-xs font-medium rounded-lg transition-all flex items-center gap-1 cursor-pointer",
+                        isLibur
+                          ? "bg-rose-500 text-white shadow-xs shadow-rose-500/30 ring-1 ring-rose-600"
+                          : "bg-white/80 text-slate-600 border border-slate-200/80 hover:bg-slate-100 hover:border-slate-300"
+                      )}
+                    >
+                      {isLibur && <Check className="w-3 h-3" />}
+                      <span>{hari}</span>
+                      {isLibur && <span className="text-[9px] opacity-85">(Libur)</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Preview Hari Ujian Terhitung */}
+            <div className="p-2.5 bg-white/80 rounded-xl border border-indigo-100 text-xs text-slate-700 space-y-1 shadow-xs">
+              <div className="flex items-center gap-1.5 font-semibold text-indigo-900 text-[11px]">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Urutan Hari Ujian ({activeExamDays.length} Hari Aktif):</span>
+              </div>
+              <div className="flex flex-wrap gap-1 text-[11px]">
+                {activeExamDays.map((hari, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-50/90 border border-indigo-200/70 text-indigo-800 font-semibold text-[10px]"
+                  >
+                    H-{idx + 1}: {hari}
+                  </span>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-500 pt-0.5">
+                Setiap murid di ruang dijadwalkan piket 1× selama pekan ujian (langsung mencantumkan nama hari).
+              </p>
             </div>
           </div>
 

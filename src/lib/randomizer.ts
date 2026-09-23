@@ -1,3 +1,34 @@
+export const HARI_DALAM_SEMINGGU = [
+  "Senin",
+  "Selasa",
+  "Rabu",
+  "Kamis",
+  "Jumat",
+  "Sabtu",
+  "Minggu",
+] as const;
+
+export function hitungHariUjian(
+  hariMulai: string = "Senin",
+  hariLibur: string[] = ["Minggu"],
+  jumlahHari: number = 6
+): string[] {
+  const result: string[] = [];
+  const startIndex = HARI_DALAM_SEMINGGU.indexOf(hariMulai as any);
+  let currentIdx = startIndex >= 0 ? startIndex : 0;
+  let safety = 0;
+
+  while (result.length < Math.max(1, jumlahHari) && safety < 100) {
+    const hari = HARI_DALAM_SEMINGGU[currentIdx % 7];
+    if (!hariLibur.includes(hari)) {
+      result.push(hari);
+    }
+    currentIdx++;
+    safety++;
+  }
+  return result;
+}
+
 export interface Murid {
   nisn: string;
   nis: string;
@@ -8,7 +39,26 @@ export interface Murid {
   nomorPeserta?: string;
   riwayatRuang: string[];
   jadwal: string[]; // [bangkuHari1, ruangHari1, bangkuHari2, ruangHari2, ...]
+  piketHari?: string;
+  piketRuang?: string;
+  piketHariKe?: number;
   [key: string]: any;
+}
+
+export interface MuridPiket {
+  nama: string;
+  kelas: string;
+  nomorPeserta?: string;
+  jk: string;
+}
+
+export interface JadwalPiketPerRuang {
+  namaRuang: string;
+  jadwalHari: {
+    hari: string;
+    urutanHariKe: number;
+    murid: MuridPiket[];
+  }[];
 }
 
 export interface RandomizerOptions {
@@ -20,6 +70,9 @@ export interface RandomizerOptions {
   namaRuang: string[];
   startNomorPeserta: number;
   incrementNomorPeserta: number;
+  hariMulai?: string;
+  hariLibur?: string[];
+  jumlahPiketPerHari?: number;
 }
 
 export interface RoomSummary {
@@ -33,6 +86,8 @@ export interface RandomizerResult {
   data: (string | number)[][];
   jenjang: string;
   roomSummary: RoomSummary[];
+  jadwalPiket: JadwalPiketPerRuang[];
+  examDays: string[];
 }
 
 // Fisher-Yates Shuffle
@@ -197,6 +252,101 @@ function assignSeats(allMurid: Murid[], modeGender: string, genderOrder?: "L-P" 
       }
     }
   }
+}
+
+function assignJadwalPiket(
+  allMurid: Murid[],
+  roomNames: string[],
+  examDays: string[],
+  jumlahHari: number,
+  targetPerHari: number = 6
+): JadwalPiketPerRuang[] {
+  allMurid.forEach((s) => {
+    s.piketHari = "";
+    s.piketRuang = "";
+    s.piketHariKe = 0;
+  });
+
+  const piketPerRuangHari: Record<string, Record<string, Murid[]>> = {};
+  roomNames.forEach((r) => {
+    piketPerRuangHari[r] = {};
+    examDays.forEach((d) => {
+      piketPerRuangHari[r][d] = [];
+    });
+  });
+
+  // Assign day by day for each room
+  for (let h = 0; h < jumlahHari; h++) {
+    const dayName = examDays[h];
+    for (const roomName of roomNames) {
+      // Find students in this room on this day who don't have a duty day yet
+      const candidates = allMurid.filter(
+        (s) => s.riwayatRuang[h] === roomName && !s.piketHari
+      );
+      acakArray(candidates);
+
+      let countToPick = targetPerHari;
+      if (candidates.length <= targetPerHari) {
+        countToPick = candidates.length;
+      }
+
+      const picked = candidates.slice(0, countToPick);
+      picked.forEach((s) => {
+        s.piketHari = dayName;
+        s.piketRuang = roomName;
+        s.piketHariKe = h + 1;
+        piketPerRuangHari[roomName][dayName].push(s);
+      });
+    }
+  }
+
+  // Handle any remaining unassigned students
+  const unassigned = allMurid.filter((s) => !s.piketHari);
+  if (unassigned.length > 0) {
+    acakArray(unassigned);
+    unassigned.forEach((s) => {
+      let bestDayIdx = 0;
+      let minCount = Infinity;
+      for (let h = 0; h < jumlahHari; h++) {
+        const d = examDays[h];
+        const r = s.riwayatRuang[h] || roomNames[0];
+        const c = piketPerRuangHari[r]?.[d]?.length || 0;
+        if (c < minCount) {
+          minCount = c;
+          bestDayIdx = h;
+        }
+      }
+      const dayName = examDays[bestDayIdx];
+      const roomName = s.riwayatRuang[bestDayIdx] || roomNames[0];
+      s.piketHari = dayName;
+      s.piketRuang = roomName;
+      s.piketHariKe = bestDayIdx + 1;
+      if (!piketPerRuangHari[roomName]) piketPerRuangHari[roomName] = {};
+      if (!piketPerRuangHari[roomName][dayName]) piketPerRuangHari[roomName][dayName] = [];
+      piketPerRuangHari[roomName][dayName].push(s);
+    });
+  }
+
+  // Generate clean JadwalPiketPerRuang structure
+  return roomNames.map((roomName) => {
+    const jadwalHari = examDays.map((dayName, idx) => {
+      const muridList = (piketPerRuangHari[roomName]?.[dayName] || []).map((m) => ({
+        nama: m.nama,
+        kelas: m.kelas,
+        nomorPeserta: m.nomorPeserta,
+        jk: m.jk,
+      }));
+      return {
+        hari: dayName,
+        urutanHariKe: idx + 1,
+        murid: muridList,
+      };
+    });
+    return {
+      namaRuang: roomName,
+      jadwalHari,
+    };
+  });
 }
 
 // Helper to distribute total count into buckets
@@ -454,10 +604,38 @@ export function processRandomization(
     assignSeats(dataInduk, options.modeGender, options.genderOrder);
   }
 
-  const headerSheet = ["NO. PESERTA", "NISN", "NIS", "NAMA", "KELAS", "JENJANG", "JK"];
+  // Calculate Exam Days (skipping holidays)
+  const examDays = hitungHariUjian(
+    options.hariMulai || "Senin",
+    options.hariLibur || ["Minggu"],
+    options.jumlahHari
+  );
+
+  // Assign Jadwal Piket (6 murid per ruang per hari, 1x per pekan ujian)
+  const targetMuridPiket = options.jumlahPiketPerHari || 6;
+  const jadwalPiket = assignJadwalPiket(
+    dataInduk,
+    roomNames,
+    examDays,
+    options.jumlahHari,
+    targetMuridPiket
+  );
+
+  const headerSheet = [
+    "NO. PESERTA",
+    "NISN",
+    "NIS",
+    "NAMA",
+    "KELAS",
+    "JENJANG",
+    "JK",
+    "HARI PIKET",
+    "RUANG PIKET",
+  ];
   for (let h = 1; h <= options.jumlahHari; h++) {
-    headerSheet.push("BANGKU HARI " + h);
-    headerSheet.push("RUANG HARI " + h);
+    const dayLabel = examDays[h - 1] ? ` (${examDays[h - 1]})` : "";
+    headerSheet.push(`BANGKU HARI ${h}${dayLabel}`);
+    headerSheet.push(`RUANG HARI ${h}${dayLabel}`);
   }
 
   const outputData: (string | number)[][] = [];
@@ -471,6 +649,8 @@ export function processRandomization(
       murid.kelas,
       murid.jenjang,
       murid.jk,
+      murid.piketHari || "-",
+      murid.piketRuang || "-",
       ...murid.jadwal,
     ];
     outputData.push(baris);
@@ -506,6 +686,8 @@ export function processRandomization(
     data: outputData,
     jenjang: options.jenjang,
     roomSummary,
+    jadwalPiket,
+    examDays,
   };
 }
 

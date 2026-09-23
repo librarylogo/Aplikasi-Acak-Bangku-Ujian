@@ -117,7 +117,11 @@ export default function App() {
                 </li>
                 <li className="flex gap-2 items-start">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
-                  <span>Klik &quot;Proses Acak Jadwal&quot; dan download hasil dalam format Excel.</span>
+                  <span>Atur hari mulai ujian, hari libur (dilewati), dan jumlah murid piket (6 murid/hari).</span>
+                </li>
+                <li className="flex gap-2 items-start">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+                  <span>Klik &quot;Proses Acak Jadwal&quot; dan download hasil Excel (lengkap Sheet Ujian &amp; Sheet Jadwal Piket).</span>
                 </li>
               </ul>
             </div>
@@ -132,6 +136,8 @@ export default function App() {
                   data={result.data} 
                   jenjang={result.jenjang} 
                   roomSummary={result.roomSummary}
+                  jadwalPiket={result.jadwalPiket}
+                  examDays={result.examDays}
                 />
               </div>
             ) : (
