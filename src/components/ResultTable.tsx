@@ -224,12 +224,39 @@ export function ResultTable({
                           </td>
                         );
                       }
+                      const headerTitle = headers[j] || "";
+                      const isBangku = headerTitle.startsWith("BANGKU");
+                      const isRuang = headerTitle.startsWith("RUANG");
+                      const displayVal = String(cell).startsWith("'")
+                        ? String(cell).substring(1)
+                        : cell;
+
+                      if (isBangku) {
+                        return (
+                          <td key={j} className="px-5 py-3 whitespace-nowrap">
+                            <span className="inline-block px-2.5 py-1 text-xs font-mono font-semibold text-slate-800 bg-slate-100/90 rounded-md border border-slate-200/80 shadow-2xs">
+                              {displayVal}
+                            </span>
+                          </td>
+                        );
+                      }
+
+                      if (isRuang) {
+                        return (
+                          <td key={j} className="px-5 py-3 whitespace-nowrap">
+                            <span className="inline-block px-2 py-0.5 text-xs font-semibold text-indigo-700 bg-indigo-50/70 rounded-md border border-indigo-100 shadow-2xs">
+                              {displayVal}
+                            </span>
+                          </td>
+                        );
+                      }
+
                       return (
                         <td
                           key={j}
                           className="px-5 py-3 whitespace-nowrap text-slate-600 group-hover:text-slate-900"
                         >
-                          {cell}
+                          {displayVal}
                         </td>
                       );
                     })}

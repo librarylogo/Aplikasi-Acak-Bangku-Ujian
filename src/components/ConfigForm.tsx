@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Upload, FileText, Play, RotateCcw, Download, Settings, Users, Calendar, Sparkles, Check } from "lucide-react";
-import { SAMPLE_DATA, HARI_DALAM_SEMINGGU, hitungHariUjian } from "@/lib/randomizer";
+import { SAMPLE_DATA, HARI_DALAM_SEMINGGU, hitungHariUjian, distributeCapacity } from "@/lib/randomizer";
 import { cn } from "@/lib/utils";
 import * as XLSX from "xlsx";
 
@@ -29,6 +29,41 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
   const activeExamDays = useMemo(() => {
     return hitungHariUjian(hariMulai, hariLibur, jumlahHari);
   }, [hariMulai, hariLibur, jumlahHari]);
+
+  // Total student count for the selected jenjang
+  const studentCountForJenjang = useMemo(() => {
+    if (!rawData || rawData.length < 2) return 0;
+    const header = rawData[0].map((h) => String(h).trim().toUpperCase());
+    const idxJenjang = header.indexOf("JENJANG");
+    if (idxJenjang === -1 || jenjang === "Semua") {
+      return rawData.length - 1;
+    }
+    let count = 0;
+    for (let i = 1; i < rawData.length; i++) {
+      if (String(rawData[i][idxJenjang]).trim() === String(jenjang).trim()) {
+        count++;
+      }
+    }
+    return count;
+  }, [rawData, jenjang]);
+
+  // Distribution simulation info
+  const distributionSimulation = useMemo(() => {
+    if (studentCountForJenjang <= 0 || jumlahRuang <= 0) return null;
+    const base = Math.floor(studentCountForJenjang / jumlahRuang);
+    const remainder = studentCountForJenjang % jumlahRuang;
+    
+    if (remainder === 0) {
+      return {
+        summary: `Semua ${jumlahRuang} ruang seimbang terisi masing-masing ${base} murid`,
+        detail: `(${studentCountForJenjang} murid ÷ ${jumlahRuang} ruang)`,
+      };
+    }
+    return {
+      summary: `Ruang 1 s.d ${remainder} terisi ${base + 1} murid, Ruang ${remainder + 1} s.d ${jumlahRuang} terisi ${base} murid`,
+      detail: `(${remainder} × ${base + 1} = ${remainder * (base + 1)} murid) + (${jumlahRuang - remainder} × ${base} = ${(jumlahRuang - remainder) * base} murid) = ${studentCountForJenjang} murid seimbang`,
+    };
+  }, [studentCountForJenjang, jumlahRuang]);
 
   const toggleHariLibur = (hari: string) => {
     setHariLibur((prev) => {
@@ -418,6 +453,22 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
               onChange={(e) => setJumlahRuang(parseInt(e.target.value) || 1)}
               className="w-full h-10 px-3 rounded-xl border border-slate-200/80 bg-white/70 backdrop-blur-sm text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-xs"
             />
+
+            {/* Preview Simulasi Pembagian Seimbang */}
+            {distributionSimulation && (
+              <div className="p-2.5 bg-emerald-50/90 border border-emerald-200/80 rounded-xl space-y-1 text-xs">
+                <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Simulasi Pembagian Seimbang:</span>
+                </div>
+                <p className="text-emerald-900 font-semibold text-[11px] leading-snug">
+                  {distributionSimulation.summary}
+                </p>
+                <p className="text-[10px] text-emerald-700 font-mono">
+                  {distributionSimulation.detail}
+                </p>
+              </div>
+            )}
             
             {/* Room Name Editor */}
             <div className="space-y-2">
