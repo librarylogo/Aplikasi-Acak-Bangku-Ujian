@@ -370,12 +370,13 @@ export function processRandomization(
       }
     }
   } else if (options.modeGender === "seling") {
-    // Mode Seling: Tiap ruang memiliki L dan P yang seimbang, tempat duduk selang-seling
+    // Mode Seling Tempat Duduk:
+    // Prioritas UTAMA: Pembagian jumlah murid selalu SEIMBANG di tiap ruang (sesuai roomCapacities).
+    // Diisi selang-seling L dan P sebisa mungkin.
+    // Jika salah satu gender habis di ruang-ruang akhir, ruang akhir tetap diisi penuh
+    // dengan gender yang tersisa agar jumlah murid tiap ruang selalu seimbang (tidak timpang).
     const males = dataInduk.filter((s) => s.jk === "L");
     const females = dataInduk.filter((s) => s.jk === "P");
-
-    const capsL = distributeCapacity(males.length, options.jumlahRuang);
-    const capsP = roomCapacities.map((totalCap, i) => totalCap - capsL[i]);
 
     const interleavedL = interleaveByClass(males);
     const interleavedP = interleaveByClass(females);
@@ -385,20 +386,75 @@ export function processRandomization(
 
     for (let i = 0; i < options.jumlahRuang; i++) {
       const roomName = roomNames[i];
-      const capL = capsL[i];
-      for (let c = 0; c < capL; c++) {
+      const targetCap = roomCapacities[i]; // e.g. 16 or 15
+
+      // Target ideal L dan P per ruang (setengah kapasitas)
+      let idealL: number;
+      let idealP: number;
+
+      if (options.genderOrder === "P-L") {
+        idealP = Math.ceil(targetCap / 2);
+        idealL = targetCap - idealP;
+      } else {
+        idealL = Math.ceil(targetCap / 2);
+        idealP = targetCap - idealL;
+      }
+
+      // Ambil L dan P yang masih tersedia
+      const availableL = interleavedL.length - sLIdx;
+      const availableP = interleavedP.length - sPIdx;
+
+      let takeL = Math.min(idealL, availableL);
+      let takeP = Math.min(idealP, availableP);
+
+      // Jika total takeL + takeP belum memenuhi target kapasitas ruang,
+      // penuhi sisa kekurangan dari gender mana pun yang masih tersisa
+      // (ruang-ruang akhir bisa tidak seling demi menjaga jumlah murid seimbang)
+      let deficit = targetCap - (takeL + takeP);
+      if (deficit > 0) {
+        const extraL = Math.min(deficit, availableL - takeL);
+        takeL += extraL;
+        deficit -= extraL;
+      }
+      if (deficit > 0) {
+        const extraP = Math.min(deficit, availableP - takeP);
+        takeP += extraP;
+        deficit -= extraP;
+      }
+
+      // Alokasikan ke ruang
+      for (let c = 0; c < takeL; c++) {
         if (sLIdx < interleavedL.length) {
           interleavedL[sLIdx].ruangTetap = roomName;
           sLIdx++;
         }
       }
 
-      const capP = capsP[i];
-      for (let c = 0; c < capP; c++) {
+      for (let c = 0; c < takeP; c++) {
         if (sPIdx < interleavedP.length) {
           interleavedP[sPIdx].ruangTetap = roomName;
           sPIdx++;
         }
+      }
+    }
+
+    // Safety fallback: pastikan semua murid teralokasi
+    while (sLIdx < interleavedL.length || sPIdx < interleavedP.length) {
+      let targetRoom = roomNames[0];
+      for (let i = 0; i < options.jumlahRuang; i++) {
+        const rName = roomNames[i];
+        const currentCount = dataInduk.filter((s) => s.ruangTetap === rName).length;
+        if (currentCount < roomCapacities[i]) {
+          targetRoom = rName;
+          break;
+        }
+      }
+      if (sLIdx < interleavedL.length) {
+        interleavedL[sLIdx].ruangTetap = targetRoom;
+        sLIdx++;
+      } else if (sPIdx < interleavedP.length) {
+        interleavedP[sPIdx].ruangTetap = targetRoom;
+        sPIdx++;
       }
     }
   } else {

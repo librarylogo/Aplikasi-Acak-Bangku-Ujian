@@ -537,7 +537,7 @@ export function ConfigForm({ onProcess, isProcessing }: ConfigFormProps) {
                 />
                 <div className="flex-1">
                   <span className="block text-sm font-semibold text-slate-900">Seling Tempat Duduk</span>
-                  <span className="block text-xs text-slate-500 mt-0.5">Jumlah L dan P seimbang di tiap ruang, duduk berselang-seling.</span>
+                  <span className="block text-xs text-slate-500 mt-0.5">Duduk berselang-seling L &amp; P. Prioritas utama: jumlah murid tiap ruang selalu seimbang (ruang-ruang akhir menyesuaikan jika salah satu gender telah habis).</span>
                 </div>
               </label>
             </div>
