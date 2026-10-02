@@ -37,8 +37,7 @@ export interface Murid {
   jenjang: string;
   jk: string;
   nomorPeserta?: string;
-  ruangTetap?: string;
-  riwayatRuang: string[];
+  riwayatRuang: string[]; // [ruangHari1, ruangHari2, ...]
   jadwal: string[]; // [bangkuHari1, ruangHari1, bangkuHari2, ruangHari2, ...]
   piketHari?: string;
   piketRuang?: string;
@@ -84,7 +83,7 @@ export interface RoomSummary {
 
 export interface RandomizerResult {
   headers: string[];
-  data: (string | number)[][] ;
+  data: (string | number)[][];
   jenjang: string;
   roomSummary: RoomSummary[];
   jadwalPiket: JadwalPiketPerRuang[];
@@ -146,61 +145,215 @@ function interleaveByClass(students: Murid[]): Murid[] {
   return result;
 }
 
-// Assign Duty Schedule (Piket) per room
-// Each student in the room is assigned exactly 1 duty day during the exam week
-function assignJadwalPiket(
-  roomStudentsMap: Record<string, Murid[]>,
-  roomNames: string[],
-  examDays: string[],
-  _targetPerHari: number = 6
-): JadwalPiketPerRuang[] {
-  const result: JadwalPiketPerRuang[] = [];
+/**
+ * Rotasi Ruang Harian Menggunakan Bipartite Matching (Kuhn's Algorithm):
+ * - Memastikan setiap murid BERGANTI RUANG setiap hari (tidak mengulang ruang jika jumlahHari <= jumlahRuang).
+ * - Menjamin kapasitas setiap ruang TEPAT sama dengan roomCapacities di SETIAP HARI ujian.
+ */
+function rotateStudentsToRooms(
+  students: Murid[],
+  availableRooms: string[],
+  roomCapacities: number[],
+  numDays: number
+): void {
+  const numStudents = students.length;
+  if (numStudents === 0 || availableRooms.length === 0 || numDays <= 0) return;
 
-  roomNames.forEach((roomName) => {
-    const studentsInRoom = roomStudentsMap[roomName] || [];
-    const shuffledStudents = [...studentsInRoom];
-    acakArray(shuffledStudents);
+  // Bangun daftar slot berdasarkan kapasitas ruang
+  const slotToRoom: string[] = [];
+  for (let r = 0; r < availableRooms.length; r++) {
+    const roomName = availableRooms[r];
+    const cap = roomCapacities[r] || 0;
+    for (let c = 0; c < cap; c++) {
+      slotToRoom.push(roomName);
+    }
+  }
 
-    const numDays = examDays.length;
-    // Distribute students evenly across exam days so all students piket 1 time
-    const dayCapacities = distributeCapacity(shuffledStudents.length, numDays);
+  // Jaga konsistensi panjang slot
+  if (slotToRoom.length !== numStudents) {
+    while (slotToRoom.length < numStudents) {
+      slotToRoom.push(availableRooms[slotToRoom.length % availableRooms.length]);
+    }
+    slotToRoom.length = numStudents;
+  }
 
-    const jadwalHari = examDays.map((dayName, dayIdx) => {
-      return {
-        hari: dayName,
-        urutanHariKe: dayIdx + 1,
-        murid: [] as MuridPiket[],
-      };
-    });
+  // Riwayat ruangan yang sudah pernah dikunjungi tiap murid
+  const visitedRooms: Set<string>[] = Array.from({ length: numStudents }, () => new Set());
+  const lastRoom: string[] = Array(numStudents).fill("");
 
-    let currentStudentIdx = 0;
-    for (let dayIdx = 0; dayIdx < numDays; dayIdx++) {
-      const cap = dayCapacities[dayIdx];
-      for (let c = 0; c < cap; c++) {
-        if (currentStudentIdx < shuffledStudents.length) {
-          const student = shuffledStudents[currentStudentIdx];
-          student.piketHari = examDays[dayIdx];
-          student.piketRuang = roomName;
-          student.piketHariKe = dayIdx + 1;
+  // Alokasikan hari demi hari
+  for (let d = 0; d < numDays; d++) {
+    const slotToStudent = Array(numStudents).fill(-1);
+    const studentToSlot = Array(numStudents).fill(-1);
 
-          jadwalHari[dayIdx].murid.push({
-            nama: student.nama,
-            kelas: student.kelas,
-            nomorPeserta: student.nomorPeserta,
-            jk: student.jk,
-          });
-          currentStudentIdx++;
+    // Acak urutan murid agar tidak ada bias
+    const studentIndices = Array.from({ length: numStudents }, (_, i) => i);
+    acakArray(studentIndices);
+
+    // DFS Augmenting Path untuk Bipartite Matching
+    function dfs(u: number, seen: boolean[], allowVisitedFallback: boolean): boolean {
+      for (let slot = 0; slot < numStudents; slot++) {
+        const room = slotToRoom[slot];
+        let canTake = false;
+
+        if (!allowVisitedFallback) {
+          // Ketat: Ruang belum pernah dikunjungi murid ini
+          canTake = !visitedRooms[u].has(room);
+        } else {
+          // Fallback jika hari > jumlah ruang: Jangan sama dengan ruang kemarin
+          canTake = room !== lastRoom[u];
+        }
+
+        if (canTake && !seen[slot]) {
+          seen[slot] = true;
+          if (slotToStudent[slot] < 0 || dfs(slotToStudent[slot], seen, allowVisitedFallback)) {
+            slotToStudent[slot] = u;
+            studentToSlot[u] = slot;
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    // Tahap 1: Pencocokan ketat (ruang baru yang belum pernah dikunjungi)
+    const unmatched: number[] = [];
+    for (const u of studentIndices) {
+      const seen = Array(numStudents).fill(false);
+      if (!dfs(u, seen, false)) {
+        unmatched.push(u);
+      }
+    }
+
+    // Tahap 2: Fallback jika diperlukan
+    if (unmatched.length > 0) {
+      for (const u of unmatched) {
+        const seen = Array(numStudents).fill(false);
+        dfs(u, seen, true);
+      }
+    }
+
+    // Tahap 3: Emergency safeguard
+    for (let slot = 0; slot < numStudents; slot++) {
+      if (slotToStudent[slot] < 0) {
+        for (let u = 0; u < numStudents; u++) {
+          if (studentToSlot[u] < 0) {
+            slotToStudent[slot] = u;
+            studentToSlot[u] = slot;
+            break;
+          }
         }
       }
     }
 
-    result.push({
-      namaRuang: roomName,
-      jadwalHari,
+    // Rekam alokasi ruang untuk hari ini
+    for (let u = 0; u < numStudents; u++) {
+      const slot = studentToSlot[u];
+      const room = slotToRoom[slot];
+      students[u].riwayatRuang.push(room);
+      visitedRooms[u].add(room);
+      lastRoom[u] = room;
+    }
+  }
+}
+
+// Assign Jadwal Piket (1× selama pekan ujian untuk setiap murid)
+function assignJadwalPiket(
+  allMurid: Murid[],
+  roomNames: string[],
+  examDays: string[],
+  roomCapacities: number[]
+): JadwalPiketPerRuang[] {
+  const numDays = examDays.length;
+
+  allMurid.forEach((s) => {
+    s.piketHari = "";
+    s.piketRuang = "";
+    s.piketHariKe = 0;
+  });
+
+  const piketPerRuangHari: Record<string, Record<string, MuridPiket[]>> = {};
+  roomNames.forEach((r) => {
+    piketPerRuangHari[r] = {};
+    examDays.forEach((d) => {
+      piketPerRuangHari[r][d] = [];
     });
   });
 
-  return result;
+  // Bagikan piket hari demi hari berdasarkan ruang tempat murid berada pada hari tersebut
+  for (let d = 0; d < numDays; d++) {
+    const dayName = examDays[d];
+
+    for (let r = 0; r < roomNames.length; r++) {
+      const roomName = roomNames[r];
+      const cap = roomCapacities[r] || 16;
+      const targetPiket = Math.max(1, Math.ceil(cap / numDays));
+
+      // Cari murid yang berada di ruang ini pada hari ini dan belum dapat jadwal piket
+      const candidates = allMurid.filter(
+        (s) => s.riwayatRuang[d] === roomName && !s.piketHari
+      );
+      acakArray(candidates);
+
+      const picked = candidates.slice(0, targetPiket);
+      picked.forEach((s) => {
+        s.piketHari = dayName;
+        s.piketRuang = roomName;
+        s.piketHariKe = d + 1;
+
+        piketPerRuangHari[roomName][dayName].push({
+          nama: s.nama,
+          kelas: s.kelas,
+          nomorPeserta: s.nomorPeserta,
+          jk: s.jk,
+        });
+      });
+    }
+  }
+
+  // Alokasikan murid yang belum terjadwal (jika ada) ke hari di mana ruangnya paling sedikit piket
+  const unassigned = allMurid.filter((s) => !s.piketHari);
+  unassigned.forEach((s) => {
+    let bestDayIdx = 0;
+    let minPiket = Infinity;
+
+    for (let d = 0; d < numDays; d++) {
+      const dayName = examDays[d];
+      const roomAtDay = s.riwayatRuang[d] || roomNames[0];
+      const count = piketPerRuangHari[roomAtDay]?.[dayName]?.length || 0;
+      if (count < minPiket) {
+        minPiket = count;
+        bestDayIdx = d;
+      }
+    }
+
+    const dayName = examDays[bestDayIdx];
+    const roomAtDay = s.riwayatRuang[bestDayIdx] || roomNames[0];
+    s.piketHari = dayName;
+    s.piketRuang = roomAtDay;
+    s.piketHariKe = bestDayIdx + 1;
+
+    if (!piketPerRuangHari[roomAtDay]) piketPerRuangHari[roomAtDay] = {};
+    if (!piketPerRuangHari[roomAtDay][dayName]) piketPerRuangHari[roomAtDay][dayName] = [];
+    piketPerRuangHari[roomAtDay][dayName].push({
+      nama: s.nama,
+      kelas: s.kelas,
+      nomorPeserta: s.nomorPeserta,
+      jk: s.jk,
+    });
+  });
+
+  return roomNames.map((roomName) => {
+    const jadwalHari = examDays.map((dayName, idx) => ({
+      hari: dayName,
+      urutanHariKe: idx + 1,
+      murid: piketPerRuangHari[roomName]?.[dayName] || [],
+    }));
+    return {
+      namaRuang: roomName,
+      jadwalHari,
+    };
+  });
 }
 
 export function processRandomization(
@@ -300,32 +453,32 @@ export function processRandomization(
   }
 
   // =========================================================================
-  // 1. TAHAP ALOKASI RUANG TETAP (KONSISTEN 100% UNTUK SELURUH HARI UJIAN)
-  //    Siswa ditetapkan ke 1 ruang untuk seluruh periode ujian.
-  //    Kapasitas ruang dibagi seimbang (misal 247 murid di 16 ruang:
-  //    Ruang 1 s.d 7 = 16 murid, Ruang 8 s.d 16 = 15 murid).
+  // 1. TAHAP PEMBAGIAN KAPASITAS RUANG SEIMBANG
+  //    Contoh: 247 murid di 16 ruang -> Ruang 1 s.d 7 = 16 murid, Ruang 8 s.d 16 = 15 murid.
   // =========================================================================
-
   const roomCapacities = distributeCapacity(totalMurid, options.jumlahRuang);
 
+  // Bersihkan riwayat dan jadwal
+  dataInduk.forEach((s) => {
+    s.riwayatRuang = [];
+    s.jadwal = [];
+  });
+
+  // =========================================================================
+  // 2. TAHAP ROTASI RUANG HARIAN (SETIAP MURID BERGANTI RUANG SETIAP HARI)
+  // =========================================================================
   if (options.modeGender === "pisah") {
-    // Mode Pisah: Ruang ujian dipisah L dan P
     const males = dataInduk.filter((s) => s.jk === "L");
     const females = dataInduk.filter((s) => s.jk === "P");
 
     if (males.length === 0 || females.length === 0) {
-      // Jika hanya ada 1 gender, alokasikan seperti campur
-      const interleaved = interleaveByClass(dataInduk);
-      let sIdx = 0;
-      for (let i = 0; i < options.jumlahRuang; i++) {
-        const cap = roomCapacities[i];
-        for (let c = 0; c < cap; c++) {
-          if (sIdx < interleaved.length) {
-            interleaved[sIdx].ruangTetap = roomNames[i];
-            sIdx++;
-          }
-        }
-      }
+      // Jika hanya ada 1 gender
+      rotateStudentsToRooms(
+        interleaveByClass(dataInduk),
+        roomNames,
+        roomCapacities,
+        options.jumlahHari
+      );
     } else {
       let ruangP = Math.round((females.length / totalMurid) * options.jumlahRuang);
       ruangP = Math.max(1, Math.min(options.jumlahRuang - 1, ruangP));
@@ -345,50 +498,24 @@ export function processRandomization(
       const capsL = distributeCapacity(males.length, roomsL.length);
       const capsP = distributeCapacity(females.length, roomsP.length);
 
-      const interleavedL = interleaveByClass(males);
-      let sLIdx = 0;
-      for (let i = 0; i < roomsL.length; i++) {
-        const cap = capsL[i];
-        for (let c = 0; c < cap; c++) {
-          if (sLIdx < interleavedL.length) {
-            interleavedL[sLIdx].ruangTetap = roomsL[i];
-            sLIdx++;
-          }
-        }
-      }
-
-      const interleavedP = interleaveByClass(females);
-      let sPIdx = 0;
-      for (let i = 0; i < roomsP.length; i++) {
-        const cap = capsP[i];
-        for (let c = 0; c < cap; c++) {
-          if (sPIdx < interleavedP.length) {
-            interleavedP[sPIdx].ruangTetap = roomsP[i];
-            sPIdx++;
-          }
-        }
-      }
+      rotateStudentsToRooms(interleaveByClass(males), roomsL, capsL, options.jumlahHari);
+      rotateStudentsToRooms(interleaveByClass(females), roomsP, capsP, options.jumlahHari);
     }
   } else if (options.modeGender === "seling") {
-    // Mode Seling Tempat Duduk:
-    // Prioritas UTAMA: Pembagian jumlah murid selalu SEIMBANG di tiap ruang (sesuai roomCapacities).
-    // Diisi selang-seling L dan P sebisa mungkin.
-    // Jika salah satu gender habis di ruang-ruang akhir, ruang akhir tetap diisi penuh
-    // dengan gender yang tersisa agar jumlah murid tiap ruang selalu seimbang (tidak timpang).
+    // Mode Seling:
+    // Prioritas: Jumlah murid per ruang tetap seimbang (Ruang 1..7: 16 murid, Ruang 8..16: 15 murid).
+    // Tentukan target L dan P per ruang.
     const males = dataInduk.filter((s) => s.jk === "L");
     const females = dataInduk.filter((s) => s.jk === "P");
 
-    const interleavedL = interleaveByClass(males);
-    const interleavedP = interleaveByClass(females);
+    const targetLPerRoom: number[] = [];
+    const targetPPerRoom: number[] = [];
 
-    let sLIdx = 0;
-    let sPIdx = 0;
+    let remL = males.length;
+    let remP = females.length;
 
-    for (let i = 0; i < options.jumlahRuang; i++) {
-      const roomName = roomNames[i];
-      const targetCap = roomCapacities[i]; // e.g. 16 or 15
-
-      // Target ideal L dan P per ruang (setengah kapasitas)
+    for (let r = 0; r < options.jumlahRuang; r++) {
+      const targetCap = roomCapacities[r];
       let idealL: number;
       let idealP: number;
 
@@ -400,108 +527,56 @@ export function processRandomization(
         idealP = targetCap - idealL;
       }
 
-      // Ambil L dan P yang masih tersedia
-      const availableL = interleavedL.length - sLIdx;
-      const availableP = interleavedP.length - sPIdx;
+      let takeL = Math.min(idealL, remL);
+      let takeP = Math.min(idealP, remP);
 
-      let takeL = Math.min(idealL, availableL);
-      let takeP = Math.min(idealP, availableP);
-
-      // Jika total takeL + takeP belum memenuhi target kapasitas ruang,
-      // penuhi sisa kekurangan dari gender mana pun yang masih tersisa
-      // (ruang-ruang akhir bisa tidak seling demi menjaga jumlah murid seimbang)
       let deficit = targetCap - (takeL + takeP);
       if (deficit > 0) {
-        const extraL = Math.min(deficit, availableL - takeL);
+        const extraL = Math.min(deficit, remL - takeL);
         takeL += extraL;
         deficit -= extraL;
       }
       if (deficit > 0) {
-        const extraP = Math.min(deficit, availableP - takeP);
+        const extraP = Math.min(deficit, remP - takeP);
         takeP += extraP;
         deficit -= extraP;
       }
 
-      // Alokasikan ke ruang
-      for (let c = 0; c < takeL; c++) {
-        if (sLIdx < interleavedL.length) {
-          interleavedL[sLIdx].ruangTetap = roomName;
-          sLIdx++;
-        }
-      }
-
-      for (let c = 0; c < takeP; c++) {
-        if (sPIdx < interleavedP.length) {
-          interleavedP[sPIdx].ruangTetap = roomName;
-          sPIdx++;
-        }
-      }
+      targetLPerRoom.push(takeL);
+      targetPPerRoom.push(takeP);
+      remL -= takeL;
+      remP -= takeP;
     }
 
-    // Safety fallback: pastikan semua murid teralokasi
-    while (sLIdx < interleavedL.length || sPIdx < interleavedP.length) {
-      let targetRoom = roomNames[0];
-      for (let i = 0; i < options.jumlahRuang; i++) {
-        const rName = roomNames[i];
-        const currentCount = dataInduk.filter((s) => s.ruangTetap === rName).length;
-        if (currentCount < roomCapacities[i]) {
-          targetRoom = rName;
-          break;
-        }
-      }
-      if (sLIdx < interleavedL.length) {
-        interleavedL[sLIdx].ruangTetap = targetRoom;
-        sLIdx++;
-      } else if (sPIdx < interleavedP.length) {
-        interleavedP[sPIdx].ruangTetap = targetRoom;
-        sPIdx++;
-      }
-    }
+    // Rotasi murid L dan P ke ruangan setiap hari
+    rotateStudentsToRooms(interleaveByClass(males), roomNames, targetLPerRoom, options.jumlahHari);
+    rotateStudentsToRooms(interleaveByClass(females), roomNames, targetPPerRoom, options.jumlahHari);
   } else {
-    // Mode Campur Bebas: Pembagian ruang seimbang sempurna
-    const interleaved = interleaveByClass(dataInduk);
-    let sIdx = 0;
-    for (let i = 0; i < options.jumlahRuang; i++) {
-      const cap = roomCapacities[i];
-      for (let c = 0; c < cap; c++) {
-        if (sIdx < interleaved.length) {
-          interleaved[sIdx].ruangTetap = roomNames[i];
-          sIdx++;
-        }
-      }
-    }
+    // Mode Campur Bebas
+    rotateStudentsToRooms(
+      interleaveByClass(dataInduk),
+      roomNames,
+      roomCapacities,
+      options.jumlahHari
+    );
   }
 
-  // Kelompokkan siswa berdasarkan ruang tetapnya
-  const roomStudentsMap: Record<string, Murid[]> = {};
-  roomNames.forEach((r) => {
-    roomStudentsMap[r] = [];
-  });
-  dataInduk.forEach((s) => {
-    if (s.ruangTetap && roomStudentsMap[s.ruangTetap]) {
-      roomStudentsMap[s.ruangTetap].push(s);
-    }
-  });
-
   // =========================================================================
-  // 2. TAHAP PENGACAKAN NOMOR BANGKU HARIAN (HARI 1 S.D JUMLAH HARI)
-  //    Siswa tetap berada di ruangnya, tetapi nomor bangku diacak setiap hari.
-  //    Menjamin hari ke-6 dan seluruh hari 100% lengkap memiliki nomor bangku.
+  // 3. TAHAP PENGACAKAN NOMOR BANGKU HARIAN DI DALAM RUANGAN
   // =========================================================================
-
-  dataInduk.forEach((s) => {
-    s.jadwal = [];
-    s.riwayatRuang = [];
-  });
-
   for (let hari = 1; hari <= options.jumlahHari; hari++) {
+    const dayIdx = hari - 1;
+
     for (let r = 0; r < roomNames.length; r++) {
       const roomName = roomNames[r];
-      const students = roomStudentsMap[roomName] || [];
+      // Ambil murid yang berada di ruang ini pada hari ini
+      const studentsInThisRoom = dataInduk.filter(
+        (s) => s.riwayatRuang[dayIdx] === roomName
+      );
 
       if (options.modeGender === "seling") {
-        const arrL = students.filter((s) => s.jk === "L");
-        const arrP = students.filter((s) => s.jk === "P");
+        const arrL = studentsInThisRoom.filter((s) => s.jk === "L");
+        const arrP = studentsInThisRoom.filter((s) => s.jk === "P");
         acakArray(arrL);
         acakArray(arrP);
 
@@ -524,12 +599,11 @@ export function processRandomization(
           const formatBangku = `'${orderedStudents[i].jenjang}.${
             noBangku < 10 ? "0" + noBangku : noBangku
           }`;
-          orderedStudents[i].riwayatRuang.push(roomName);
           orderedStudents[i].jadwal.push(formatBangku, roomName);
         }
       } else {
-        // Campur atau Pisah: acak urutan bangku di dalam ruang
-        const shuffled = [...students];
+        // Campur atau Pisah
+        const shuffled = [...studentsInThisRoom];
         acakArray(shuffled);
 
         for (let i = 0; i < shuffled.length; i++) {
@@ -537,7 +611,6 @@ export function processRandomization(
           const formatBangku = `'${shuffled[i].jenjang}.${
             noBangku < 10 ? "0" + noBangku : noBangku
           }`;
-          shuffled[i].riwayatRuang.push(roomName);
           shuffled[i].jadwal.push(formatBangku, roomName);
         }
       }
@@ -545,28 +618,24 @@ export function processRandomization(
   }
 
   // =========================================================================
-  // 3. TAHAP JADWAL PIKET MURID
-  //    Setiap murid di ruang piket 1× selama sepekan ujian.
+  // 4. TAHAP JADWAL PIKET MURID
   // =========================================================================
-
   const examDays = hitungHariUjian(
     options.hariMulai || "Senin",
     options.hariLibur || ["Minggu"],
     options.jumlahHari
   );
 
-  const targetMuridPiket = options.jumlahPiketPerHari || 6;
   const jadwalPiket = assignJadwalPiket(
-    roomStudentsMap,
+    dataInduk,
     roomNames,
     examDays,
-    targetMuridPiket
+    roomCapacities
   );
 
   // =========================================================================
-  // 4. SUSUN OUTPUT HASIL DAN HEADER
+  // 5. SUSUN OUTPUT HASIL DAN HEADER
   // =========================================================================
-
   const headerSheet = [
     "NO. PESERTA",
     "NISN",
@@ -603,14 +672,15 @@ export function processRandomization(
     outputData.push(baris);
   }
 
-  // Rekapitulasi Ruang
-  const roomSummary: RoomSummary[] = roomNames.map((roomName) => {
-    const list = roomStudentsMap[roomName] || [];
-    const countL = list.filter((s) => s.jk === "L").length;
-    const countP = list.filter((s) => s.jk === "P").length;
+  // Rekapitulasi Ruang (Hari ke-1 sebagai acuan kapasitas konsisten)
+  const roomSummary: RoomSummary[] = roomNames.map((roomName, idx) => {
+    const cap = roomCapacities[idx];
+    const listDay1 = dataInduk.filter((s) => s.riwayatRuang[0] === roomName);
+    const countL = listDay1.filter((s) => s.jk === "L").length;
+    const countP = listDay1.filter((s) => s.jk === "P").length;
     return {
       name: roomName,
-      count: list.length,
+      count: cap,
       genderCounts: { L: countL, P: countP },
     };
   });
